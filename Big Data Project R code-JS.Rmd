@@ -2,14 +2,18 @@
 title: "CIND 820 Big Data Final Project"
 author: "Jossa Soto"
 date: "13/02/2022"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
-```{r setup, echo=FALSE}
-#library(tidyverse)
-#library(tidytext)
-#library(glue)
-#library(stringr)
+```{r setup, message=FALSE}
+#loading needed libraries
+library(tidyverse)
+library(tidytext)
+library(glue)
+library(stringr)
+library(ggplot2)
 ```
 
 ## Dataset
@@ -79,6 +83,17 @@ lapply(lapply(twitter_data, is.na), sum)
 ```
 
 ```{r}
-#boxplot()
+#Check for any outliers in the numerical variables
 
+#airline sentiment confidence
+ggplot(twitter_data, aes(y = airline_sentiment_confidence)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+
+#negative reason confidence
+ggplot(twitter_data, aes(y = negativereason_confidence)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+
+#retweet count
+ggplot(twitter_data, aes(y = retweet_count)) + 
+  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
 ```
