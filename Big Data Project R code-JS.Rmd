@@ -53,7 +53,9 @@ head(twitter_data)
 str(twitter_data)
 
 #change airline_sentiment to factors
+twitter_data$airline <- as.factor(twitter_data$airline)
 twitter_data$airline_sentiment <- as.factor(twitter_data$airline_sentiment)
+twitter_data$airline_sentiment_gold <- as.factor(twitter_data$airline_sentiment_gold)
 twitter_data$negativereason <- as.factor(twitter_data$negativereason)
 twitter_data$negativereason_gold <- as.factor(twitter_data$negativereason_gold)
 
@@ -71,19 +73,9 @@ sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retw
 ```
 
 ```{r}
-#find the frequency of all possible values in negativereason_gold, airline_sentiment_gold, retweet_count, and tweet_coord
-
-table(negativereason_gold)
-table(airline_sentiment_gold)
-table(retweet_count)
-head(table(tweet_coord), 10)
-```
-
-```{r}
 #check for and count any NAs
 unlist(lapply(lapply(twitter_data, is.na), sum)) #unlist to convert the list output to a vector for easier readability
 ```
-
 ```{r warning = FALSE}
 #Check for any outliers in the numerical variables
 
@@ -103,4 +95,50 @@ RC_box <- twitter_data %>%
 
 outlier_fig <- ASC_box + NRC_box + RC_box + plot_layout(ncol = 3)
 outlier_fig
+```
+
+```{r}
+#frequency of the factor and discrete variables
+
+table(airline)
+table(airline_sentiment)
+table(negativereason)
+table(negativereason_gold)
+table(airline_sentiment_gold)
+table(retweet_count)
+```
+```{r}
+#airline
+airline_bar <- twitter_data %>% ggplot() + 
+  geom_bar(aes(x = airline, fill = airline)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline") + labs(y = "Count", x = "Airline", fill = "Airline")
+
+#airline sentiment
+AS_bar <- twitter_data %>% ggplot() + 
+  geom_bar(aes(x = airline_sentiment, fill = airline_sentiment)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline Sentiment (Class)") + labs(y = "Count", x = "Airline Sentiment (Class)", fill = "Airline Sentiment (Class)")
+
+#airline sentiment
+ASG_bar <- twitter_data %>% ggplot() + 
+  geom_bar(aes(x = airline_sentiment_gold, fill = airline_sentiment_gold)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline Sentiment - Gold") + labs(y = "Count", x = "Airline Sentiment - Gold", fill = "Airline Sentiment - Gold")
+
+#negative reason
+NR_bar <- twitter_data %>% ggplot() + 
+  geom_bar(aes(x = negativereason, fill = negativereason)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Negative Reason") + labs(y = "Count", x = "Negative Reason", fill = "Negative Reason")
+
+#negative reason gold
+NRG_bar <- twitter_data %>% ggplot() + 
+  geom_bar(aes(x = negativereason_gold, fill = negativereason_gold)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Negative Reason - Gold") + labs(y = "Count", x = "Negative Reason - Gold", fill = "Negative Reason - Gold")
+
+frequency_fig1 <- airline_bar + AS_bar + ASG_bar + NRG_bar + plot_layout(ncol = 2, nrow = 2)
+frequency_fig1
+NR_bar
 ```
