@@ -2,9 +2,9 @@
 title: "CIND 820 Big Data Final Project"
 author: "Jossa Soto"
 date: "13/02/2022"
-output:
-  html_document: default
-  pdf_document: default
+output: 
+ html_document:
+  keep_md: true
 ---
 
 ```{r setup, message=FALSE}
@@ -14,11 +14,13 @@ library(tidytext)
 library(glue)
 library(stringr)
 library(ggplot2)
+library(patchwork)
+library(gt)
 ```
 
 ## Dataset
 ```{r}
-twitter_data <- read.csv("Twitter US Airline Sentiment.csv")
+twitter_data <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
 
 #reduced sample size to start
 set.seed(2421)
@@ -65,35 +67,39 @@ str(twitter_data)
 summary(twitter_data)
 ```
 
-```{r echo=FALSE}
+```{r}
 #find the frequency of all possible values in negativereason_gold, airline_sentiment_gold, retweet_count, and tweet_coord
 
-#table(negativereason_gold)
-
-#table(airline_sentiment_gold)
-
-#table(retweet_count)
-
-#table(tweet_coord)
+table(negativereason_gold)
+table(airline_sentiment_gold)
+table(retweet_count)
+head(table(tweet_coord), 10)
 ```
 
 ```{r}
-#check for any NAs
-lapply(lapply(twitter_data, is.na), sum)
+#check for and count any NAs
+NA_count <- lapply(lapply(twitter_data, is.na), sum)
+
+#NA_count %>% gt() 
 ```
 
 ```{r}
 #Check for any outliers in the numerical variables
 
 #airline sentiment confidence
-ggplot(twitter_data, aes(y = airline_sentiment_confidence)) + 
-  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+ASC_box <- twitter_data %>% ggplot() + 
+  geom_boxplot(aes(y = airline_sentiment_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
 #negative reason confidence
-ggplot(twitter_data, aes(y = negativereason_confidence)) + 
-  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+NRC_box <- twitter_data %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = negativereason_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
 #retweet count
-ggplot(twitter_data, aes(y = retweet_count)) + 
-  geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+RC_box <- twitter_data %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = retweet_count), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+
+outlier_fig <- ASC_box + NRC_box + RC_box + plot_layout(ncol = 3)
+outlier_fig
 ```

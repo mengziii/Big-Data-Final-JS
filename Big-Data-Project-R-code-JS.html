@@ -176,10 +176,12 @@ library(tidyverse)
 library(tidytext)
 library(glue)
 library(stringr)
-library(ggplot2)</code></pre>
+library(ggplot2)
+library(patchwork)
+library(gt)</code></pre>
 <div id="dataset" class="section level2">
 <h2>Dataset</h2>
-<pre class="r"><code>twitter_data &lt;- read.csv(&quot;Twitter US Airline Sentiment.csv&quot;)
+<pre class="r"><code>twitter_data &lt;- read.csv(&quot;Twitter US Airline Sentiment.csv&quot;, header = T, na.strings = c(&quot;&quot;,&quot;NA&quot;))
 
 #reduced sample size to start
 set.seed(2421)
@@ -213,18 +215,18 @@ head(twitter_data)</code></pre>
 ## 7034  5.69949e+17          negative                       0.6561
 ##                negativereason negativereason_confidence    airline
 ## 10948              Can&#39;t Tell                    0.3335 US Airways
-## 2297                                             0.0000     United
+## 2297                     &lt;NA&gt;                    0.0000     United
 ## 12871             Late Flight                    0.6596   American
 ## 4233               Can&#39;t Tell                    0.7077     United
 ## 6780  Flight Booking Problems                    0.6651      Delta
 ## 7034               Can&#39;t Tell                    0.3330      Delta
 ##       airline_sentiment_gold            name negativereason_gold retweet_count
-## 10948                            altadenadad                                 1
-## 2297                         GreenkidspenWRA                                 0
-## 12871                               samoss58                                 0
-## 4233                                elliotg9                                 0
-## 6780                           lizgottbrecht                                 0
-## 7034                            BreezyAintEZ                                 0
+## 10948                   &lt;NA&gt;     altadenadad                &lt;NA&gt;             1
+## 2297                    &lt;NA&gt; GreenkidspenWRA                &lt;NA&gt;             0
+## 12871                   &lt;NA&gt;        samoss58                &lt;NA&gt;             0
+## 4233                    &lt;NA&gt;        elliotg9                &lt;NA&gt;             0
+## 6780                    &lt;NA&gt;   lizgottbrecht                &lt;NA&gt;             0
+## 7034                    &lt;NA&gt;    BreezyAintEZ                &lt;NA&gt;             0
 ##                                                                                                                                            text
 ## 10948                  @USAirways Plus a US Airways - you need to do something about this! I left Philly to thaw out!!!! http://t.co/pKy7ZhnNRH
 ## 2297       @united Hello we are doing a world record attempt on the amount of ball point pens in a collection please could you help with a pen?
@@ -233,17 +235,17 @@ head(twitter_data)</code></pre>
 ## 6780  @JetBlue can&#39;t book a flight because of outdated, forced opt-in &quot;Verified by Visa&quot; nonsense. Help a girl out? I just want to get to @sxsw
 ## 7034                                                      No JetBlueâ\200¦ Justâ\200¦ no â\200œ@JetBlue: Our fleet&#39;s on fleek. http://t.co/mB3IPGs8zQâ\200\235
 ##       tweet_coord    tweet_created                 tweet_location
-## 10948              2015-02-20 5:52 Haverford, PA &amp; Wilton Manors 
-## 2297              2015-02-21 15:11                   Grimsby - UK
-## 12871             2015-02-23 15:01                               
-## 4233              2015-02-17 11:19                               
-## 6780              2015-02-24 10:11                    Boston, MA 
-## 7034              2015-02-23 11:57       Ft. Lauderdale-Davie, Fl
+## 10948        &lt;NA&gt;  2015-02-20 5:52 Haverford, PA &amp; Wilton Manors 
+## 2297         &lt;NA&gt; 2015-02-21 15:11                   Grimsby - UK
+## 12871        &lt;NA&gt; 2015-02-23 15:01                           &lt;NA&gt;
+## 4233         &lt;NA&gt; 2015-02-17 11:19                           &lt;NA&gt;
+## 6780         &lt;NA&gt; 2015-02-24 10:11                    Boston, MA 
+## 7034         &lt;NA&gt; 2015-02-23 11:57       Ft. Lauderdale-Davie, Fl
 ##                    user_timezone
 ## 10948     Atlantic Time (Canada)
-## 2297                            
-## 12871                           
-## 4233                            
+## 2297                        &lt;NA&gt;
+## 12871                       &lt;NA&gt;
+## 4233                        &lt;NA&gt;
 ## 6780  Eastern Time (US &amp; Canada)
 ## 7034  Eastern Time (US &amp; Canada)</code></pre>
 </div>
@@ -254,18 +256,18 @@ head(twitter_data)</code></pre>
 ##  $ tweet_id                    : num  5.69e+17 5.69e+17 5.70e+17 5.68e+17 5.70e+17 ...
 ##  $ airline_sentiment           : chr  &quot;negative&quot; &quot;neutral&quot; &quot;negative&quot; &quot;negative&quot; ...
 ##  $ airline_sentiment_confidence: num  0.655 0.631 1 1 1 ...
-##  $ negativereason              : chr  &quot;Can&#39;t Tell&quot; &quot;&quot; &quot;Late Flight&quot; &quot;Can&#39;t Tell&quot; ...
+##  $ negativereason              : chr  &quot;Can&#39;t Tell&quot; NA &quot;Late Flight&quot; &quot;Can&#39;t Tell&quot; ...
 ##  $ negativereason_confidence   : num  0.334 0 0.66 0.708 0.665 ...
 ##  $ airline                     : chr  &quot;US Airways&quot; &quot;United&quot; &quot;American&quot; &quot;United&quot; ...
-##  $ airline_sentiment_gold      : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ airline_sentiment_gold      : chr  NA NA NA NA ...
 ##  $ name                        : chr  &quot;altadenadad&quot; &quot;GreenkidspenWRA&quot; &quot;samoss58&quot; &quot;elliotg9&quot; ...
-##  $ negativereason_gold         : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ negativereason_gold         : chr  NA NA NA NA ...
 ##  $ retweet_count               : int  1 0 0 0 0 0 0 0 0 0 ...
 ##  $ text                        : chr  &quot;@USAirways Plus a US Airways - you need to do something about this! I left Philly to thaw out!!!! http://t.co/pKy7ZhnNRH&quot; &quot;@united Hello we are doing a world record attempt on the amount of ball point pens in a collection please could&quot;| __truncated__ &quot;@AmericanAir 3349, was supposed to be in little rock at 10am this morning.&quot; &quot;@united which is why my next flights to Miami will be on another airline.&quot; ...
-##  $ tweet_coord                 : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ tweet_coord                 : chr  NA NA NA NA ...
 ##  $ tweet_created               : chr  &quot;2015-02-20 5:52&quot; &quot;2015-02-21 15:11&quot; &quot;2015-02-23 15:01&quot; &quot;2015-02-17 11:19&quot; ...
-##  $ tweet_location              : chr  &quot;Haverford, PA &amp; Wilton Manors &quot; &quot;Grimsby - UK&quot; &quot;&quot; &quot;&quot; ...
-##  $ user_timezone               : chr  &quot;Atlantic Time (Canada)&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...</code></pre>
+##  $ tweet_location              : chr  &quot;Haverford, PA &amp; Wilton Manors &quot; &quot;Grimsby - UK&quot; NA NA ...
+##  $ user_timezone               : chr  &quot;Atlantic Time (Canada)&quot; NA NA NA ...</code></pre>
 <pre class="r"><code>#change airline_sentiment to factors
 twitter_data$airline_sentiment &lt;- as.factor(twitter_data$airline_sentiment)
 twitter_data$negativereason &lt;- as.factor(twitter_data$negativereason)
@@ -280,18 +282,18 @@ str(twitter_data)</code></pre>
 ##  $ tweet_id                    : num  5.69e+17 5.69e+17 5.70e+17 5.68e+17 5.70e+17 ...
 ##  $ airline_sentiment           : Factor w/ 3 levels &quot;negative&quot;,&quot;neutral&quot;,..: 1 2 1 1 1 1 2 2 1 1 ...
 ##  $ airline_sentiment_confidence: num  0.655 0.631 1 1 1 ...
-##  $ negativereason              : Factor w/ 11 levels &quot;&quot;,&quot;Bad Flight&quot;,..: 3 1 9 3 8 3 1 1 9 5 ...
+##  $ negativereason              : Factor w/ 10 levels &quot;Bad Flight&quot;,&quot;Can&#39;t Tell&quot;,..: 2 NA 8 2 7 2 NA NA 8 4 ...
 ##  $ negativereason_confidence   : num  0.334 0 0.66 0.708 0.665 ...
 ##  $ airline                     : chr  &quot;US Airways&quot; &quot;United&quot; &quot;American&quot; &quot;United&quot; ...
-##  $ airline_sentiment_gold      : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ airline_sentiment_gold      : chr  NA NA NA NA ...
 ##  $ name                        : chr  &quot;altadenadad&quot; &quot;GreenkidspenWRA&quot; &quot;samoss58&quot; &quot;elliotg9&quot; ...
-##  $ negativereason_gold         : Factor w/ 5 levels &quot;&quot;,&quot;Can&#39;t Tell&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ negativereason_gold         : Factor w/ 4 levels &quot;Can&#39;t Tell&quot;,&quot;Customer Service Issue&quot;,..: NA NA NA NA NA NA NA NA NA NA ...
 ##  $ retweet_count               : int  1 0 0 0 0 0 0 0 0 0 ...
 ##  $ text                        : chr  &quot;@USAirways Plus a US Airways - you need to do something about this! I left Philly to thaw out!!!! http://t.co/pKy7ZhnNRH&quot; &quot;@united Hello we are doing a world record attempt on the amount of ball point pens in a collection please could&quot;| __truncated__ &quot;@AmericanAir 3349, was supposed to be in little rock at 10am this morning.&quot; &quot;@united which is why my next flights to Miami will be on another airline.&quot; ...
-##  $ tweet_coord                 : chr  &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...
+##  $ tweet_coord                 : chr  NA NA NA NA ...
 ##  $ tweet_created               : Date, format: &quot;2015-02-20&quot; &quot;2015-02-21&quot; ...
-##  $ tweet_location              : chr  &quot;Haverford, PA &amp; Wilton Manors &quot; &quot;Grimsby - UK&quot; &quot;&quot; &quot;&quot; ...
-##  $ user_timezone               : chr  &quot;Atlantic Time (Canada)&quot; &quot;&quot; &quot;&quot; &quot;&quot; ...</code></pre>
+##  $ tweet_location              : chr  &quot;Haverford, PA &amp; Wilton Manors &quot; &quot;Grimsby - UK&quot; NA NA ...
+##  $ user_timezone               : chr  &quot;Atlantic Time (Canada)&quot; NA NA NA ...</code></pre>
 <pre class="r"><code>#display summary
 summary(twitter_data)</code></pre>
 <pre><code>##     tweet_id         airline_sentiment airline_sentiment_confidence
@@ -303,13 +305,13 @@ summary(twitter_data)</code></pre>
 ##  Max.   :5.703e+17                     Max.   :1.0000              
 ##                                                                    
 ##                 negativereason negativereason_confidence   airline         
-##                        :1875   Min.   :0.0000            Length:5000       
-##  Customer Service Issue:1008   1st Qu.:0.3618            Class :character  
-##  Late Flight           : 599   Median :0.6707            Mode  :character  
-##  Can&#39;t Tell            : 365   Mean   :0.6396                              
-##  Cancelled Flight      : 279   3rd Qu.:1.0000                              
-##  Lost Luggage          : 262   Max.   :1.0000                              
-##  (Other)               : 612   NA&#39;s   :1409                                
+##  Customer Service Issue:1008   Min.   :0.0000            Length:5000       
+##  Late Flight           : 599   1st Qu.:0.3618            Class :character  
+##  Can&#39;t Tell            : 365   Median :0.6707            Mode  :character  
+##  Cancelled Flight      : 279   Mean   :0.6396                              
+##  Lost Luggage          : 262   3rd Qu.:1.0000                              
+##  (Other)               : 612   Max.   :1.0000                              
+##  NA&#39;s                  :1875   NA&#39;s   :1409                                
 ##  airline_sentiment_gold     name          
 ##  Length:5000            Length:5000       
 ##  Class :character       Class :character  
@@ -319,11 +321,11 @@ summary(twitter_data)</code></pre>
 ##                                           
 ##                                           
 ##                          negativereason_gold retweet_count   
-##                                    :4993     Min.   : 0.000  
-##  Can&#39;t Tell                        :   1     1st Qu.: 0.000  
-##  Customer Service Issue            :   4     Median : 0.000  
-##  Customer Service Issue\nCan&#39;t Tell:   1     Mean   : 0.099  
-##  Late Flight                       :   1     3rd Qu.: 0.000  
+##  Can&#39;t Tell                        :   1     Min.   : 0.000  
+##  Customer Service Issue            :   4     1st Qu.: 0.000  
+##  Customer Service Issue\nCan&#39;t Tell:   1     Median : 0.000  
+##  Late Flight                       :   1     Mean   : 0.099  
+##  NA&#39;s                              :4993     3rd Qu.: 0.000  
 ##                                              Max.   :44.000  
 ##                                                              
 ##      text           tweet_coord        tweet_created        tweet_location    
@@ -342,67 +344,58 @@ summary(twitter_data)</code></pre>
 ##                    
 ##                    
 ## </code></pre>
-<pre class="r"><code>#check for any NAs
-lapply(lapply(twitter_data, is.na), sum)</code></pre>
-<pre><code>## $tweet_id
-## [1] 0
-## 
-## $airline_sentiment
-## [1] 0
-## 
-## $airline_sentiment_confidence
-## [1] 0
-## 
-## $negativereason
-## [1] 0
-## 
-## $negativereason_confidence
-## [1] 1409
-## 
-## $airline
-## [1] 0
-## 
-## $airline_sentiment_gold
-## [1] 0
-## 
-## $name
-## [1] 0
-## 
-## $negativereason_gold
-## [1] 0
-## 
-## $retweet_count
-## [1] 0
-## 
-## $text
-## [1] 0
-## 
-## $tweet_coord
-## [1] 0
-## 
-## $tweet_created
-## [1] 0
-## 
-## $tweet_location
-## [1] 0
-## 
-## $user_timezone
-## [1] 0</code></pre>
+<pre class="r"><code>#find the frequency of all possible values in negativereason_gold, airline_sentiment_gold, retweet_count, and tweet_coord
+
+table(negativereason_gold)</code></pre>
+<pre><code>## negativereason_gold
+##                         Can&#39;t Tell             Customer Service Issue 
+##                                  1                                  4 
+## Customer Service Issue\nCan&#39;t Tell                        Late Flight 
+##                                  1                                  1</code></pre>
+<pre class="r"><code>table(airline_sentiment_gold)</code></pre>
+<pre><code>## airline_sentiment_gold
+## negative positive 
+##        7        1</code></pre>
+<pre class="r"><code>table(retweet_count)</code></pre>
+<pre><code>## retweet_count
+##    0    1    2    3    4    5   18   22   28   31   44 
+## 4722  227   27    7   10    2    1    1    1    1    1</code></pre>
+<pre class="r"><code>head(table(tweet_coord), 10)</code></pre>
+<pre><code>## tweet_coord
+##  [-37.8536992, 145.1106176]                  [0.0, 0.0] 
+##                           1                          72 
+##  [13.07787514, -59.6049865] [13.71241507, 100.60468537] 
+##                           1                           1 
+## [18.22245647, -63.00369733]  [18.4729405, -68.39820768] 
+##                           2                           1 
+## [19.41622708, -99.16143525] [19.43010575, -99.18988829] 
+##                           1                           1 
+## [19.43706642, -99.07927123]  [20.0615871, 110.18390431] 
+##                           1                           1</code></pre>
+<pre class="r"><code>#check for and count any NAs
+NA_count &lt;- lapply(lapply(twitter_data, is.na), sum)
+
+#NA_count %&gt;% gt() </code></pre>
 <pre class="r"><code>#Check for any outliers in the numerical variables
 
 #airline sentiment confidence
-ggplot(twitter_data, aes(y = airline_sentiment_confidence)) + 
-  geom_boxplot(outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE)</code></pre>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
-<pre class="r"><code>#negative reason confidence
-ggplot(twitter_data, aes(y = negativereason_confidence)) + 
-  geom_boxplot(outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE)</code></pre>
+ASC_box &lt;- twitter_data %&gt;% ggplot() + 
+  geom_boxplot(aes(y = airline_sentiment_confidence), outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE) 
+
+#negative reason confidence
+NRC_box &lt;- twitter_data %&gt;% 
+  ggplot() + 
+  geom_boxplot(aes(y = negativereason_confidence), outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE) 
+
+#retweet count
+RC_box &lt;- twitter_data %&gt;% 
+  ggplot() + 
+  geom_boxplot(aes(y = retweet_count), outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE)
+
+outlier_fig &lt;- ASC_box + NRC_box + RC_box + plot_layout(ncol = 3)
+outlier_fig</code></pre>
 <pre><code>## Warning: Removed 1409 rows containing non-finite values (stat_boxplot).</code></pre>
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAMAAABNUi8GAAAAolBMVEUAAAAAADoAAGYAOpAAZrYzMzM6AAA6kNtNTU1NTW5NTY5NbqtNjshmAABmAGZmtv9uTU1uTW5uTY5ubo5ubqtuq+SOTU2OTW6OTY6Obk2OyP+QOgCQ2/+rbk2rbm6rbo6ryKur5OSr5P+2ZgC2///Ijk3I///bkDrb/7bb///kq27k///r6+v/tmb/yI7/25D/5Kv//7b//8j//9v//+T///9KDIXpAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAO2klEQVR4nO2dDXfayBlG2WZdK7FTJ15ju2SdtLjGu7BxMUH//69VIz69xjCvRnrnKXvvaQ+UnFyP6Y0+BjTqlQDC9HIPAGAfBArSEChIQ6AgDYGCNAQK0jQO9I8Vm2epCJoEh6Ro6mBIBOorOm4TgeYyCQ5J0USguUyCQ1I0EWguk+CQFE0EmsskOCRFE4HmMgkOSdFEoLlMgkNSNBFoLpPgkBRNBJrLJDgkRROB5jIJDknRRKC5TIJDUjQRaC6T4JAUTQSayyQ4JEUTgeYyCQ5J0USguUyCQ1I0EWguk+CQFE25Ap1ejurH2XVxNlk/ECimrkS2QJ+KD3Wg87tBOT5fPRAops5EpkAf3v9rsQWd3Y7CxnT5QKCYOhM128VPrybl7Ga4fKheOKnY9/dOAKLYV1F8oE9ndZnLh4gtaMTPBai2ZB1tQQMECsm0FKj5GJRAIYqWAp3f9Rdn8f3Is3gChSjaCDT81zoPSqAQRWqg+yBQSIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQpstA9/7cLqRwfESEwhYU8sEuHqQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkIZAQRoCBWkIFKQhUJCGQEEaAgVpCBSkIVCQhkBBGgIFaQgUpCFQkCYt0Nl1cTYJT8ZFYFA/fhgt/5RAIZmkQOd3VZLnq//1VLX6MNj6YwKFZJICnd2OyunlcoM5uxmW86/DrT8mUEgmKdDp1aTusiZsSqtdftjRB2/F3p/byujh6IkI5e1Aw059FWj9OP28vRVlCwrJtLYFfVqcLVWsj0MJFJJp7Rj0ob96lUChPRLP4vurs/jFjj1sRuffmGaC1mhjHjRsRJd7+nFRvF+fyBMoJMMnSSANgYI0BArSEChIQ6AgDYGCNAQK0pgDfez1Lh7f/R7jJlBIxhro/bvfPl78+PJzjJtAIRljoM8fL6r/lN//9p8IN4FCMgQK0lh38Y9hF//88TTGTaCQjPkk6XuvIqpPAoV0mGYCaQgUpLEG+uPLaRk5y0SgkI55HjS0yTwoeGGfZgoPTDOBEwQK0pjnQUOazIOCF8yDgjRMM4E0BArSWAP979/DLr7HSRL4YAw0do6+hkAhmWbTTHHsDRQgCusWlEDBFVugkVP0EYHGdw5/Zcy7+B4nSeAI00wgDYGCNFwXD9JwXTxIw2XHIA2BgjRcFw/S8H1QkIZpJpCGQEEaS6Crzzn5qBPcaHjRXNR3mggUkuGyY5CGQEEarosHaZrNgxq+Vv/Wz002wF+CiFCYZoJ8MA8K0tjmQS+45AN8YQsK0pi3oG1ddtzurwHHCoGCNKZd/COfxYMz2Za+afF3gCOGkySQhuUXQRqWXwRpOAYFabItv9ji7wBHDMsvgjQsvwjSMM0E0hAoSNNk+UVWFgE3uCYJpOGqTpCGQEEadvEgDSdJIA3TTCANgYI01kB/fDmN/s4dgUIy5tvQhDa5DQ14wTQTSEOgIA3zoCANt6EBaZhmAmkaB/r8j4OHoQQKyRAoSEOgIA2BgjQECtIQKEhDoCANgYI0TNSDNKwPCtKwPihIw/qgIA3rg4I0rA8K0rA+KEiTNs00uy7OJvWzcVEUH0ZbL5QECi2QFOj8blCOz+unD4M/vVASKLRA0tI3s9tROb0cVc/mX4cvXwgQKCSTdNHc9GpSzm5CmtWuvSgGWy+cVOz9uR38LnCERITy9mXHT2erHqefh2ErunkhwBYUkkm6Ln6zwax5GLx8gUAhmaRd/MtDzipQjkGhZZJOkuZ3/eVJe9i3z7+NNi8ECBSSaWMeNGwzx0XxflgyDwotw/dBQRproNVZ0vPHuE86CRTSabA+aHWe9Mj6oOCDfZopfGeZ5RfBCXugYY6JQMEJ8xeWT7//9OtiIfCDECgk0+CiuZ/L+3e/x7gJFJJhmgmkIVCQhuviQRr7SdKPLxeRFx8TKCTT4Ot296fl96izJAKFZBoE+shEPbjR4KPOqs5HtqDgQ5Obyd73fvo1xk2gkAzTTCANgYI0TS75uIg7BCVQSMd8kvTut8U37iIgUEimydftLphmAi8IFKQxXxcfdvHcLx684H7xIA3TTCANa9SDNNzlA6SxnyRFzdHXECgkw00UQBpOkkAaAgVp+LIISMOXRUAaPosHaQgUpOHLIiANXxYBaZhmAmkIFKQxnyTF7d1rCBSSMZ8kVUegsV9oIlBIpsEu/r7HyiLgRbNj0HvmQcGHZltQbuQFTpg/i4/dv5cECi3AJR8gTZfzoHt/bhdSOD4iQlkHuriRLJd8gCN8kgTSNDsG5et24ASBgjSmQB97K9Iv+QCIotEWNI59gTZE0NTekF7/f9GUo36bfE6SUgenYyJQX5HTvTpTB6djIlBfkdO9OlMHp2MiUF+R0706UwenYyJQX5HTvTpTB6djIlBfkdO9OlMHp2MiUF+R0706UwenYyJQXxHTTLlEBGo0EaiviECNpl2Brr5uF/VhZ5eD0zERqK/o0GXH4fz9+eNpzAqMXQ5Ox0SgvqLYbzNFzDR1OTgdE4H6igg0l4hAjaZdga538TH3o+lycDomAvUVHTqLr5dfvCgfI6ZCuxycjolAfUVMM+USEajRRKC+IgI1mnYH2tJtaFIHp2MiUF/RoS+LtHQbmtTB6ZgI1Fd0cJqpnbt8pA5Ox0SgviICzSUiUKNpV6Ct3YYmdXA6JgL1FUXNg6bfhiZ1cDomAvUVMc2US0SgRhOB+ooI1GjaGSjXxXcmIlCjaVegkTOgBNoEArWZdgXK2kzdiQjUaNq9BSXQrkQEajTtCjRyip5Am0CgNtOuQFtboz51cDomAvUVMc2US0SgRhOB+ooI1GgiUF8RgRpNBOorIlCjiUB9RQRqNBGor4hAjSYC9RURqNFEoL4iAjWaCNRXRKBGE4H6igjUaIoIdHZdnE3qZ9NPRTEoy3FRFB9GBNoIArWZDgc6vxuU4/O61JthOf08LB8GbEEbQ6A20+FAZ7ejcnoZNphPIdOHwfzrkEAbQ6A20+FAp1eTetu5zPVmWO3y6z19WYb71L7592AnvGHNeDvQp7OtQOd3/Xovv9mKdvmvR8fEFtRX1HQLOrvuL19dH4d2OTgdE4H6ipodg1Zn8evTIwJtCIHaTIcDDXv1xVn8ss+wz59/Y5qpGQRqMx0OdDkPWm1Ew/xnOD2qHt+vT+S7HJyOiUB9RXySlEtEoEYTgfqKCNRoIlBfEYEaTQTqKyJQo4lAfUUEajQRqK+IQI0mAvUVEajRRKC+IgI1mgjUV0SgRhOB+ooI1GgiUF8RgRpNBOorIlCjiUB9RQRqNBGor4hAjSYC9RURqNFEoL4iAjWaCNRXRKBGE4H6igjUaCJQXxGBGk0E6isiUKOJQH1FBGo0EaiviECNJgL1FRGo0USgviICNZoI1FdEoEYTgfqKCNRoIlBfEYEaTQTqKyJQo4lAfUUEajQRqK+IQI0mAvUVEajRRKC+IgI1mgjUV0SgRhOB+ooI1GgiUF8RgRpNBOorIlCjiUB9RQRqNBGor4hAjSYC9RURqNFEoL4iAjWaCNRXRKBGE4H6igjUaCJQXxGBGk0E6isiUKOJQH1FBGo0JQcKNk5yD+D/FLagPiK2oEYTgfqKCNRoIlBfEYEaTQTqKyJQo4lAfUUEajQRqK+IQI0mAvUVEajRRKC+IgI1mgjUV0SgRhOB+ooI1GgiUF8RgRpNBOorIlCjiUB9RQRqNBGor4hAjSYC9RURqNFEoL4iAjWaCNRXRKBGE4H6igjUaCJQXxGBGk0E6isiUKOJQH1FBGo0EaiviECNJgL1FRGo0USgviICNZoI1FdEoEYTgfqKCNRoIlBfEYEaTQTqKyJQo4lAfUUEajQRqK+IQI0mAvUVEajRRKC+IgI1mgjUV0SgRhOB+ooI1GgiUF8RgRpNBOorIlCjiUB9RQRqNBGor4hAjSYC9RURqNFEoL4iAjWaCNRXRKBGE4H6igjUaCJQXxGBGk0E6isiUKOJQH1FBGo0EaiviECNpohAZ9fF2WT72eYFAjVDoDbT4UDnd4NyfL71bPMCgdohUJvpcKCz21E5vRxtnm1eIFA7BGozHQ50ejUpZzfDzbPNCycVb/49gBZ5O9Cns1WPy2ebFwJd/uvRMQkOSdGktgUlUEzdiDgGzSU6blOms/j++iy+vziL73MWj6lTUYN50LDNZB4Uk4+IT5JyiY7bRKC5TIJDUjQRaC6T4JAUTQSayyQ4JEUTgeYyCQ5J0USguUyCQ1I0EWguk+CQFE0EmsskOCRFE4HmMgkOSdFEoLlMgkNSNBFoLpPgkBRNBJrLJDgkRROB5jIJDknRRKC5TIJDUjQRaC6T4JAUTYqBrlG8fE5wTIJDUhzTqyERqBOCQ1IcE4HmQnBIimPqIFCADiFQkIZAQRoCBWkIFKRJCXT7OvmwNqMCmzFNPxWFwJherbIqgNybtKelhEBfrBc61vg9N2MKq0hNPw8P/QW/Ab1cXjUncm/SvpYSAt1eq2n6yz8lAt2M6Sn8ug/ZB/VqhavcAyoF36R9LSUEurXa3fzrvzV28S9X4Ns8y8arNQJzD6gUfJP2tZQQ6NZ6oeO+yDHoizVMw2pnuXm1ymruAZWCb9K+lhoG+lAU5y82DgKBvhxTOO7u5x1QQH0LKvEm/eltauskaXPcMC4C/cRBtsHWscz0U/Z/MqX6MajIm7SvpaSz+K31QgW2oIHNmETe+lerrAog9ybtayl9HnQRvkigmzEt/iXmH9SrVVYFkHuT9rTEJ0kgDYGCNAQK0hAoSEOgIA2BgjQECtIQKEhDoCDN/wCLTASEF9IcxQAAAABJRU5ErkJggg==" /><!-- --></p>
-<pre class="r"><code>#retweet count
-ggplot(twitter_data, aes(y = retweet_count)) + 
-  geom_boxplot(outlier.colour=&quot;black&quot;, outlier.shape=16, outlier.size=2, notch=FALSE)</code></pre>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 </div>
 
 
