@@ -65,6 +65,9 @@ str(twitter_data)
 
 #display summary
 summary(twitter_data)
+
+#standard deviation for numerical variables
+sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retweet_count)
 ```
 
 ```{r}
@@ -78,12 +81,10 @@ head(table(tweet_coord), 10)
 
 ```{r}
 #check for and count any NAs
-NA_count <- lapply(lapply(twitter_data, is.na), sum)
-
-#NA_count %>% gt() 
+unlist(lapply(lapply(twitter_data, is.na), sum)) #unlist to convert the list output to a vector for easier readability
 ```
 
-```{r}
+```{r warning = FALSE}
 #Check for any outliers in the numerical variables
 
 #airline sentiment confidence
