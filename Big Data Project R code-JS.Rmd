@@ -2,9 +2,10 @@
 title: "CIND 820 Big Data Final Project"
 author: "Jossa Soto"
 date: "13/02/2022"
-output: 
- html_document:
-  keep_md: true
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
 ---
 
 ```{r setup, message=FALSE}
