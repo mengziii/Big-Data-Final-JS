@@ -11,63 +11,84 @@ output:
 ```{r setup, message=FALSE}
 #loading needed libraries
 library(tidyverse)
+library(ROSE)
 library(tidytext)
 library(glue)
 library(stringr)
 library(ggplot2)
 library(patchwork)
 library(gt)
+library(tm)
 ```
 
 ## Dataset
 ```{r}
-twitter_data <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
+twitter_balanced <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
 
-#reduced sample size to start
-set.seed(2421)
-twitter_data <- twitter_data[sample(nrow(twitter_data), 5000),]
 
+table(twitter_balanced$airline_sentiment)
+```
+Data is imbalanced so sampling will be done so that the subset is balanced. This will be done by undersampling the negative and neutral group. 
+
+```{r}
+twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
+
+twitter_pos_ind <- which(twitter_balanced$airline_sentiment == "positive")
+twitter_neg_ind <- which(twitter_balanced$airline_sentiment == "negative")
+twitter_neut_ind <- which(twitter_balanced$airline_sentiment == "neutral") 
+
+set.seed(2407)
+nsample <- 2500
+pick_neg <- sample(twitter_neg_ind, nsample)
+pick_neut <- sample(twitter_neut_ind, nsample)
+
+twitter_balanced <- twitter_balanced[c(pick_neg, pick_neut, twitter_pos_ind),] 
+
+table(twitter_balanced$airline_sentiment)
+```
+
+```{r}
 #declare each variable from df for easy use
-tweet_id <- twitter_data$tweet_id
-airline_sentiment <- twitter_data$airline_sentiment
-airline_sentiment_confidence <- twitter_data$airline_sentiment_confidence
-negativereason <- twitter_data$negativereason
-negativereason_confidence <- twitter_data$negativereason_confidence
-airline <- twitter_data$airline
-airline_sentiment_gold <- twitter_data$airline_sentiment_gold
-name <- twitter_data$name
-negativereason_gold <- twitter_data$negativereason_gold
-retweet_count <- twitter_data$retweet_count
-tweet_text <- twitter_data$text
-tweet_coord <- twitter_data$tweet_coord
-tweet_created <- twitter_data$tweet_created
-tweet_location <- twitter_data$tweet_location
-user_TZ <- twitter_data$user_timezone
+tweet_id <- twitter_balanced$tweet_id
+airline_sentiment <- twitter_balanced$airline_sentiment
+airline_sentiment_confidence <- twitter_balanced$airline_sentiment_confidence
+negativereason <- twitter_balanced$negativereason
+negativereason_confidence <- twitter_balanced$negativereason_confidence
+airline <- twitter_balanced$airline
+airline_sentiment_gold <- twitter_balanced$airline_sentiment_gold
+name <- twitter_balanced$name
+negativereason_gold <- twitter_balanced$negativereason_gold
+retweet_count <- twitter_balanced$retweet_count
+tweet_text <- twitter_balanced$text
+tweet_coord <- twitter_balanced$tweet_coord
+tweet_created <- twitter_balanced$tweet_created
+tweet_location <- twitter_balanced$tweet_location
+user_TZ <- twitter_balanced$user_timezone
 
 #display first 6 rows of data
-head(twitter_data)
+head(twitter_balanced)
 ```
 
 ## Data Exploration
 
 ```{r}
-str(twitter_data)
+str(twitter_balanced)
 
 #change airline_sentiment to factors
-twitter_data$airline <- as.factor(twitter_data$airline)
-twitter_data$airline_sentiment <- as.factor(twitter_data$airline_sentiment)
-twitter_data$airline_sentiment_gold <- as.factor(twitter_data$airline_sentiment_gold)
-twitter_data$negativereason <- as.factor(twitter_data$negativereason)
-twitter_data$negativereason_gold <- as.factor(twitter_data$negativereason_gold)
+twitter_balanced$airline <- as.factor(twitter_balanced$airline)
+twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
+twitter_balanced$airline_sentiment_gold <- as.factor(twitter_balanced$airline_sentiment_gold)
+twitter_balanced$negativereason <- as.factor(twitter_balanced$negativereason)
+twitter_balanced$negativereason_gold <- as.factor(twitter_balanced$negativereason_gold)
 
 #change tweet_created from char to date
-twitter_data$tweet_created <- as.Date(twitter_data$tweet_created)
+twitter_balanced$tweet_created <- as.Date(twitter_balanced$tweet_created)
 
 #rerun str and summary to display updated variables
-str(twitter_data)
+str(twitter_balanced)
 
 #display summary
-summary(twitter_data)
+summary(twitter_balanced)
 
 #standard deviation for numerical variables
 sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retweet_count)
@@ -75,22 +96,22 @@ sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retw
 
 ```{r}
 #check for and count any NAs
-unlist(lapply(lapply(twitter_data, is.na), sum)) #unlist to convert the list output to a vector for easier readability
+unlist(lapply(lapply(twitter_balanced, is.na), sum)) #unlist to convert the list output to a vector for easier readability
 ```
 ```{r warning = FALSE}
 #Check for any outliers in the numerical variables
 
 #airline sentiment confidence
-ASC_box <- twitter_data %>% ggplot() + 
+ASC_box <- twitter_balanced %>% ggplot() + 
   geom_boxplot(aes(y = airline_sentiment_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
 #negative reason confidence
-NRC_box <- twitter_data %>% 
+NRC_box <- twitter_balanced %>% 
   ggplot() + 
   geom_boxplot(aes(y = negativereason_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
 #retweet count
-RC_box <- twitter_data %>% 
+RC_box <- twitter_balanced %>% 
   ggplot() + 
   geom_boxplot(aes(y = retweet_count), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
 
@@ -108,33 +129,34 @@ table(negativereason_gold)
 table(airline_sentiment_gold)
 table(retweet_count)
 ```
+
 ```{r}
 #airline
-airline_bar <- twitter_data %>% ggplot() + 
+airline_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline, fill = airline)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline") + labs(y = "Count", x = "Airline", fill = "Airline")
 
 #airline sentiment
-AS_bar <- twitter_data %>% ggplot() + 
+AS_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline_sentiment, fill = airline_sentiment)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline Sentiment (Class)") + labs(y = "Count", x = "Airline Sentiment (Class)", fill = "Airline Sentiment (Class)")
 
 #airline sentiment
-ASG_bar <- twitter_data %>% ggplot() + 
+ASG_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline_sentiment_gold, fill = airline_sentiment_gold)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline Sentiment - Gold") + labs(y = "Count", x = "Airline Sentiment - Gold", fill = "Airline Sentiment - Gold")
 
 #negative reason
-NR_bar <- twitter_data %>% ggplot() + 
+NR_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = negativereason, fill = negativereason)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Negative Reason") + labs(y = "Count", x = "Negative Reason", fill = "Negative Reason")
 
 #negative reason gold
-NRG_bar <- twitter_data %>% ggplot() + 
+NRG_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = negativereason_gold, fill = negativereason_gold)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Negative Reason - Gold") + labs(y = "Count", x = "Negative Reason - Gold", fill = "Negative Reason - Gold")
@@ -142,4 +164,20 @@ NRG_bar <- twitter_data %>% ggplot() +
 frequency_fig1 <- airline_bar + AS_bar + ASG_bar + NRG_bar + plot_layout(ncol = 2, nrow = 2)
 frequency_fig1
 NR_bar
+```
+
+## Preprocessing
+```{r}
+#Tokenization into unigrams
+tweets_clean <- Boost_tokenizer(tweet_text)
+
+#Normalization: lowercase the words and remove punctuation and numbers
+tweets_clean <- tolower(tweets_clean)
+#tweets_clean <- tm_map(tweets_clean, removePunctuation, lazy = TRUE)
+
+
+#TF-IDF - will only do it on the tweets 
+
+
+#word2vec
 ```
