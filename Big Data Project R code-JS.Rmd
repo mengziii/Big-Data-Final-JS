@@ -25,7 +25,6 @@ library(tm)
 ```{r}
 twitter_balanced <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
 
-
 table(twitter_balanced$airline_sentiment)
 ```
 Data is imbalanced so sampling will be done so that the subset is balanced. This will be done by undersampling the negative and neutral group. 
@@ -121,7 +120,6 @@ outlier_fig
 
 ```{r}
 #frequency of the factor and discrete variables
-
 table(airline)
 table(airline_sentiment)
 table(negativereason)
@@ -167,11 +165,15 @@ NR_bar
 ```
 
 ## Preprocessing
+
 ```{r}
 #Tokenization into unigrams
 tweets_clean <- Boost_tokenizer(tweet_text)
+```
 
-#Normalization
+### Normalization
+
+```{r}
 clean_tweets <- function(x) {
     x %>%
     # Remove URLs
@@ -182,7 +184,7 @@ clean_tweets <- function(x) {
     str_remove_all("#[[:alnum:]_]+") %>%
     # Replace "&" character reference with "and"
     str_replace_all("&amp;", "and") %>%
-    # Remove puntucation, using a standard character class
+    # Remove punctuation, using a standard character class
     str_remove_all("[[:punct:]]") %>%
     # Remove "RT: " from beginning of retweets
     str_remove_all("^RT:? ") %>%
@@ -195,17 +197,42 @@ clean_tweets <- function(x) {
     }
     
 tweets_clean <- tweets_clean %>% clean_tweets
+```
 
-#remove stop words
-#tweets_stopwords <- stopwords()
+### Stemming
+
+```{r}
+tweets_clean <- stemDocument(tweets_clean)
+```
+
+### Stop Words Removal 
+
+```{r, message=FALSE}
+tweets_clean <- twitter_balanced %>%
+  select(text) %>%
+  unnest_tokens(word, text)
+
+tweets_clean <- tweets_clean %>%
+  anti_join(stop_words)
 
 #bar chart for most frequent words found in tweets
-#tweets_clean %>% 
-#  count(word,sort = TRUE) %>%
-#  top_n(15)
-  
-#TF-IDF - will only do it on the tweets 
+tweets_clean %>% 
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  labs(y = "Count",
+       x = "Unique words",
+       title = "Most frequent words found in the airline tweets",
+       subtitle = "Stop words removed from the list")
 
+```
+
+```{r}
+#TF-IDF - will only do it on the tweets 
 
 #word2vec
 ```
