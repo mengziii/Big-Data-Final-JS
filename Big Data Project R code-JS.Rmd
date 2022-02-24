@@ -171,11 +171,39 @@ NR_bar
 #Tokenization into unigrams
 tweets_clean <- Boost_tokenizer(tweet_text)
 
-#Normalization: lowercase the words and remove punctuation and numbers
-tweets_clean <- tolower(tweets_clean)
-#tweets_clean <- tm_map(tweets_clean, removePunctuation, lazy = TRUE)
+#Normalization
+clean_tweets <- function(x) {
+    x %>%
+    # Remove URLs
+    str_remove_all(" ?(f|ht)(tp)(s?)(://)(.*)[.|/](.*)") %>%
+    # Remove mentions e.g. "@my_account"
+	str_remove_all("@[[:alnum:]_]{4,}") %>%
+    # Remove hashtags
+    str_remove_all("#[[:alnum:]_]+") %>%
+    # Replace "&" character reference with "and"
+    str_replace_all("&amp;", "and") %>%
+    # Remove puntucation, using a standard character class
+    str_remove_all("[[:punct:]]") %>%
+    # Remove "RT: " from beginning of retweets
+    str_remove_all("^RT:? ") %>%
+    # Replace any newline characters with a space
+    str_replace_all("\\\n", " ") %>%
+    # Make everything lowercase
+    str_to_lower() %>%
+    # Remove any trailing whitespace around the text
+    str_trim("both")
+    }
+    
+tweets_clean <- tweets_clean %>% clean_tweets
 
+#remove stop words
+#tweets_stopwords <- stopwords()
 
+#bar chart for most frequent words found in tweets
+#tweets_clean %>% 
+#  count(word,sort = TRUE) %>%
+#  top_n(15)
+  
 #TF-IDF - will only do it on the tweets 
 
 

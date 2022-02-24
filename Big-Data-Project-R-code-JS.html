@@ -482,11 +482,39 @@ frequency_fig1</code></pre>
 <pre class="r"><code>#Tokenization into unigrams
 tweets_clean &lt;- Boost_tokenizer(tweet_text)
 
-#Normalization: lowercase the words and remove punctuation and numbers
-tweets_clean &lt;- tolower(tweets_clean)
-#tweets_clean &lt;- tm_map(tweets_clean, removePunctuation, lazy = TRUE)
+#Normalization
+clean_tweets &lt;- function(x) {
+    x %&gt;%
+    # Remove URLs
+    str_remove_all(&quot; ?(f|ht)(tp)(s?)(://)(.*)[.|/](.*)&quot;) %&gt;%
+    # Remove mentions e.g. &quot;@my_account&quot;
+    str_remove_all(&quot;@[[:alnum:]_]{4,}&quot;) %&gt;%
+    # Remove hashtags
+    str_remove_all(&quot;#[[:alnum:]_]+&quot;) %&gt;%
+    # Replace &quot;&amp;&quot; character reference with &quot;and&quot;
+    str_replace_all(&quot;&amp;amp;&quot;, &quot;and&quot;) %&gt;%
+    # Remove puntucation, using a standard character class
+    str_remove_all(&quot;[[:punct:]]&quot;) %&gt;%
+    # Remove &quot;RT: &quot; from beginning of retweets
+    str_remove_all(&quot;^RT:? &quot;) %&gt;%
+    # Replace any newline characters with a space
+    str_replace_all(&quot;\\\n&quot;, &quot; &quot;) %&gt;%
+    # Make everything lowercase
+    str_to_lower() %&gt;%
+    # Remove any trailing whitespace around the text
+    str_trim(&quot;both&quot;)
+    }
+    
+tweets_clean &lt;- tweets_clean %&gt;% clean_tweets
 
+#remove stop words
+#tweets_stopwords &lt;- stopwords()
 
+#bar chart for most frequent words found in tweets
+#tweets_clean %&gt;% 
+#  count(word,sort = TRUE) %&gt;%
+#  top_n(15)
+  
 #TF-IDF - will only do it on the tweets 
 
 
