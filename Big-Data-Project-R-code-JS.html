@@ -478,63 +478,97 @@ frequency_fig1</code></pre>
 <div id="preprocessing" class="section level2">
 <h2>Preprocessing</h2>
 <pre class="r"><code>#Tokenization into unigrams
-tweets_clean &lt;- Boost_tokenizer(tweet_text)</code></pre>
-<div id="normalization" class="section level3">
-<h3>Normalization</h3>
-<pre class="r"><code>clean_tweets &lt;- function(x) {
-    x %&gt;%
-    # Remove URLs
-    str_remove_all(&quot; ?(f|ht)(tp)(s?)(://)(.*)[.|/](.*)&quot;) %&gt;%
-    # Remove mentions e.g. &quot;@my_account&quot;
-    str_remove_all(&quot;@[[:alnum:]_]{4,}&quot;) %&gt;%
-    # Remove hashtags
-    str_remove_all(&quot;#[[:alnum:]_]+&quot;) %&gt;%
-    # Replace &quot;&amp;&quot; character reference with &quot;and&quot;
-    str_replace_all(&quot;&amp;amp;&quot;, &quot;and&quot;) %&gt;%
-    # Remove punctuation, using a standard character class
-    str_remove_all(&quot;[[:punct:]]&quot;) %&gt;%
-    # Remove &quot;RT: &quot; from beginning of retweets
-    str_remove_all(&quot;^RT:? &quot;) %&gt;%
-    # Replace any newline characters with a space
-    str_replace_all(&quot;\\\n&quot;, &quot; &quot;) %&gt;%
-    # Make everything lowercase
-    str_to_lower() %&gt;%
-    # Remove any trailing whitespace around the text
-    str_trim(&quot;both&quot;)
-    }
-    
-tweets_clean &lt;- tweets_clean %&gt;% clean_tweets</code></pre>
-</div>
-<div id="stemming" class="section level3">
-<h3>Stemming</h3>
-<pre class="r"><code>tweets_clean &lt;- stemDocument(tweets_clean)</code></pre>
-</div>
-<div id="stop-words-removal" class="section level3">
-<h3>Stop Words Removal</h3>
-<pre class="r"><code>tweets_clean &lt;- twitter_balanced %&gt;%
-  select(text) %&gt;%
-  unnest_tokens(word, text)
+#tweets_unigram &lt;- Boost_tokenizer(tweets_text)</code></pre>
+<div id="section" class="section level3">
+<h3></h3>
+<pre class="r"><code>tweets_text &lt;- twitter_balanced$text
+str(tweets_text)</code></pre>
+<pre><code>##  chr [1:7363] &quot;@united coupled with self-service policies/cost cutting exacerbates the noted issues. (3/3)&quot; ...</code></pre>
+<pre class="r"><code>tweets_unigram &lt;- Boost_tokenizer(tweets_text)
 
-tweets_clean &lt;- tweets_clean %&gt;%
-  anti_join(stop_words)
+tweets_source &lt;- VectorSource(tweets_text)
 
-#bar chart for most frequent words found in tweets
-tweets_clean %&gt;% 
-  count(word, sort = TRUE) %&gt;%
-  top_n(15) %&gt;%
-  mutate(word = reorder(word, n)) %&gt;%
-  ggplot(aes(x = word, y = n)) +
-  geom_col() +
-  xlab(NULL) +
-  coord_flip() +
-  labs(y = &quot;Count&quot;,
-       x = &quot;Unique words&quot;,
-       title = &quot;Most frequent words found in the airline tweets&quot;,
-       subtitle = &quot;Stop words removed from the list&quot;)</code></pre>
-<p><img src="data:image/png;base64,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" /><!-- --></p>
-<pre class="r"><code>#TF-IDF - will only do it on the tweets 
-
-#word2vec</code></pre>
+tweets_corpus &lt;- VCorpus(tweets_source)</code></pre>
+<p>Create a function to process the data:</p>
+<ul>
+<li>remove whitespace</li>
+<li>remove punctuation</li>
+<li>convert all text to lowercase</li>
+<li>remove stop words</li>
+<li>stem the words</li>
+<li>remove numbers</li>
+</ul>
+<pre class="r"><code>clean_corpus &lt;- function(corpus){
+  corpus &lt;- tm_map(corpus, stripWhitespace)
+  corpus &lt;- tm_map(corpus, removePunctuation)
+  corpus &lt;- tm_map(corpus, content_transformer(tolower))
+  corpus &lt;- tm_map(corpus, removeWords, stopwords(&quot;en&quot;))
+  corpus &lt;- tm_map(corpus, stemDocument)
+  corpus &lt;- tm_map(corpus, removeNumbers)
+  
+  return(corpus)
+}</code></pre>
+<pre class="r"><code>clean_corp &lt;- clean_corpus(tweets_corpus)
+clean_corp[[148]][1]</code></pre>
+<pre><code>## $content
+## [1] &quot;southwestair kudo rsw cs crew rerout pax allevi sale due grade eqp  now &quot;</code></pre>
+<p>Create a term-document matrix</p>
+<pre class="r"><code>tweets_tdm &lt;- TermDocumentMatrix(clean_corp)
+tweets_tdm</code></pre>
+<pre><code>## &lt;&lt;TermDocumentMatrix (terms: 7961, documents: 7363)&gt;&gt;
+## Non-/sparse entries: 65558/58551285
+## Sparsity           : 100%
+## Maximal term length: 160
+## Weighting          : term frequency (tf)</code></pre>
+<pre class="r"><code>tweets_m &lt;- as.matrix(tweets_tdm)
+dim(tweets_m)</code></pre>
+<pre><code>## [1] 7961 7363</code></pre>
+<pre class="r"><code>tweets_m[14:28, 20:22]</code></pre>
+<pre><code>##                  Docs
+## Terms             20 21 22
+##   â\200\230connectâ\200\231    0  0  0
+##   â\200“              0  0  0
+##   â\200”              0  0  0
+##   â\200”gt            0  0  0
+##   â\200‹              0  0  0
+##   â\200\235              0  0  0
+##   â\200\235h             0  0  0
+##   â\200\235l             0  0  0
+##   â\200\235w             0  0  0
+##   â\200œ              0  0  0
+##   â\200œamericanair   0  0  0
+##   â\200œear           0  0  0
+##   â\200œjetblu        0  0  0
+##   â\200œonlyâ\200\235       0  0  0
+##   â\200œsouthwestair  0  0  0</code></pre>
+<pre class="r"><code>tweets_tdm_rm_sparse &lt;- removeSparseTerms(tweets_tdm, 0.99) #reduce the matrix by removing the low frequency terms
+tweets_tdm_rm_sparse</code></pre>
+<pre><code>## &lt;&lt;TermDocumentMatrix (terms: 144, documents: 7363)&gt;&gt;
+## Non-/sparse entries: 33145/1027127
+## Sparsity           : 97%
+## Maximal term length: 13
+## Weighting          : term frequency (tf)</code></pre>
+<pre class="r"><code>tweets_m &lt;- as.matrix(tweets_tdm_rm_sparse)
+dim(tweets_m)</code></pre>
+<pre><code>## [1]  144 7363</code></pre>
+<pre class="r"><code>tweets_m[14:28, 10:22]</code></pre>
+<pre><code>##          Docs
+## Terms     10 11 12 13 14 15 16 17 18 19 20 21 22
+##   bag      0  0  0  0  0  0  0  0  0  1  0  0  0
+##   baggag   0  0  0  0  0  0  0  0  0  0  0  0  0
+##   best     0  0  0  0  0  0  0  0  0  0  0  0  0
+##   better   0  0  0  0  0  0  1  0  0  0  0  0  0
+##   board    0  0  0  0  0  0  0  0  0  1  0  0  0
+##   book     0  0  0  0  0  0  0  0  0  0  0  0  0
+##   call     0  0  0  0  0  0  0  0  0  0  0  0  0
+##   can      1  0  0  0  0  0  0  0  0  0  1  0  0
+##   cancel   0  0  0  0  1  0  0  0  0  0  0  0  1
+##   cant     0  0  0  0  0  0  0  0  0  0  0  0  0
+##   chang    0  0  0  0  0  0  0  0  0  0  0  0  0
+##   check    0  0  0  0  0  1  0  0  0  0  0  0  0
+##   come     0  0  0  0  0  0  0  0  0  0  0  0  0
+##   connect  0  0  0  0  0  0  0  0  0  0  0  0  0
+##   crew     0  0  0  0  0  0  0  0  0  0  0  0  0</code></pre>
 </div>
 </div>
 

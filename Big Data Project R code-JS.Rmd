@@ -168,71 +168,64 @@ NR_bar
 
 ```{r}
 #Tokenization into unigrams
-tweets_clean <- Boost_tokenizer(tweet_text)
+#tweets_unigram <- Boost_tokenizer(tweets_text)
 ```
 
-### Normalization
+### 
 
 ```{r}
-clean_tweets <- function(x) {
-    x %>%
-    # Remove URLs
-    str_remove_all(" ?(f|ht)(tp)(s?)(://)(.*)[.|/](.*)") %>%
-    # Remove mentions e.g. "@my_account"
-	str_remove_all("@[[:alnum:]_]{4,}") %>%
-    # Remove hashtags
-    str_remove_all("#[[:alnum:]_]+") %>%
-    # Replace "&" character reference with "and"
-    str_replace_all("&amp;", "and") %>%
-    # Remove punctuation, using a standard character class
-    str_remove_all("[[:punct:]]") %>%
-    # Remove "RT: " from beginning of retweets
-    str_remove_all("^RT:? ") %>%
-    # Replace any newline characters with a space
-    str_replace_all("\\\n", " ") %>%
-    # Make everything lowercase
-    str_to_lower() %>%
-    # Remove any trailing whitespace around the text
-    str_trim("both")
-    }
-    
-tweets_clean <- tweets_clean %>% clean_tweets
+tweets_text <- twitter_balanced$text
+str(tweets_text)
+
+tweets_unigram <- Boost_tokenizer(tweets_text)
+
+tweets_source <- VectorSource(tweets_text)
+
+tweets_corpus <- VCorpus(tweets_source)
 ```
 
-### Stemming
+Create a function to process the data: 
+
+- remove whitespace
+- remove punctuation
+- convert all text to lowercase
+- remove stop words
+- stem the words
+- remove numbers
 
 ```{r}
-tweets_clean <- stemDocument(tweets_clean)
-```
-
-### Stop Words Removal 
-
-```{r, message=FALSE}
-tweets_clean <- twitter_balanced %>%
-  select(text) %>%
-  unnest_tokens(word, text)
-
-tweets_clean <- tweets_clean %>%
-  anti_join(stop_words)
-
-#bar chart for most frequent words found in tweets
-tweets_clean %>% 
-  count(word, sort = TRUE) %>%
-  top_n(15) %>%
-  mutate(word = reorder(word, n)) %>%
-  ggplot(aes(x = word, y = n)) +
-  geom_col() +
-  xlab(NULL) +
-  coord_flip() +
-  labs(y = "Count",
-       x = "Unique words",
-       title = "Most frequent words found in the airline tweets",
-       subtitle = "Stop words removed from the list")
-
+clean_corpus <- function(corpus){
+  corpus <- tm_map(corpus, stripWhitespace)
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removeWords, stopwords("en"))
+  corpus <- tm_map(corpus, stemDocument)
+  corpus <- tm_map(corpus, removeNumbers)
+  
+  return(corpus)
+}
 ```
 
 ```{r}
-#TF-IDF - will only do it on the tweets 
+clean_corp <- clean_corpus(tweets_corpus)
+clean_corp[[148]][1]
+```
+Create a term-document matrix
 
-#word2vec
+```{r}
+tweets_tdm <- TermDocumentMatrix(clean_corp)
+tweets_tdm
+
+tweets_m <- as.matrix(tweets_tdm)
+dim(tweets_m)
+
+tweets_m[14:28, 20:22]
+
+tweets_tdm_rm_sparse <- removeSparseTerms(tweets_tdm, 0.99) #reduce the matrix by removing the low frequency terms
+tweets_tdm_rm_sparse
+
+tweets_m <- as.matrix(tweets_tdm_rm_sparse)
+dim(tweets_m)
+
+tweets_m[14:28, 10:22]
 ```
