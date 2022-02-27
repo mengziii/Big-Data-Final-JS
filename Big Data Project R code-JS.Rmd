@@ -168,19 +168,24 @@ frequency_fig1 <- airline_bar + AS_bar + ASG_bar + NRG_bar + plot_layout(ncol = 
 frequency_fig1
 NR_bar
 ```
+## Train / Test Data
+
+```{r }
+smp_size <- floor(0.7 * nrow(twitter_balanced))
+
+set.seed(924)
+train_ind <- sample(seq_len(nrow(twitter_balanced)), size = smp_size)
+
+tweet_train <- twitter_balanced[train_ind, ]
+tweet_test <- twitter_balanced[-train_ind, ]
+```
 
 ## Preprocessing
 
-### Tokenization
-
-Text is tokenized to unigrams to separate the words for further processing. 
-
-```{r}
+```{r, warning = FALSE}
 tweets_text <- twitter_balanced$text
+#tweets_text <- boost_tokenizer(twitter_balanced$text)
 str(tweets_text)
-
-# Tokenization
-tweets_unigram <- Boost_tokenizer(tweets_text)
 
 # Create a corpus
 tweets_source <- VectorSource(tweets_text)
@@ -229,57 +234,186 @@ tweets_corpus <- tm_map(tweets_corpus, stemDocument) # Stem the text
 # Display a row of the cleaned corpus
 tweets_corpus[[148]][1]
 ```
+### Term-Document: TF-IDF Weights
 
-### Term-Document Matrix
+Create a term-document matrix with TF-IDF weights then reduce the matrix down so it only contains a certain \% of the terms. 
 
-Create a term-document matrix then reduce the matrix down so it only contains a certain \% of the terms. 
+Weights are calculated using the following formula: 
+
+$TF-IDF(t)=TF(t) \times IDF(t)$
+\n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
 
 ```{r, warning = FALSE}
-tweets_tdm <- TermDocumentMatrix(tweets_corpus,control = list(weighting = weightTfIdf))
-tweets_tdm
+tweets_tdm_tfidf <- TermDocumentMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
+tweets_tdm_tfidf
 
-tweets_m <- as.matrix(tweets_tdm)
-dim(tweets_m)
+tweets_m_tfidf <- as.matrix(tweets_tdm_tfidf)
+dim(tweets_m_tfidf)
 
 # Display a subset of the matrix
-tweets_m[14:28, 10:15]
+tweets_m_tfidf[14:28, 10:15]
 
 # Reduce the matrix by removing the low frequency terms
-tweets_tdm_rm_sparse <- removeSparseTerms(tweets_tdm, 0.99) 
-tweets_tdm_rm_sparse
+tweets_tdm_tfidf_sparse <- removeSparseTerms(tweets_tdm_tfidf, 0.99) 
+tweets_tdm_tfidf_sparse
 
-tweets_m <- as.matrix(tweets_tdm_rm_sparse)
-dim(tweets_m)
+tweets_m_tfidf <- as.matrix(tweets_tdm_tfidf_sparse)
+dim(tweets_m_tfidf)
 
 # Display a subset of the matrix after the low frequency terms were removed
-tweets_m[14:28, 10:15]
+tweets_m_tfidf[14:28, 10:15]
 ```
 ```{r}
-freq <- rowSums(tweets_m)
+freq_tfidf <- rowSums(tweets_m_tfidf)
 
-head(freq)
-tail(freq)
-
-# Plot of frequency terms appearing by summing the content of all terms
-plot(sort(freq, decreasing = TRUE), col = "blue", main = "Word TF-IDF Frequencies", xlab = "TF-IDF-based rank", ylab = "TF-IDF")
+# # Plot of frequency terms appearing by summing the content of all terms
+# plot(sort(freq_tfidf, decreasing = TRUE), col = "blue", main = "Word TF-IDF Frequencies", xlab = "TF-IDF-based rank", ylab = "TF-IDF")
 ```
+
 ```{r}
 # Show most frequent terms and their frequencies
-high_freq <- tail(sort(freq), n=10)
-high_freq_df <- as.data.frame(sort(high_freq))
-high_freq_df$names <- rownames(high_freq_df)
+high_freq_tfidf <- tail(sort(freq_tfidf), n=15)
+high_freq_tfidf_df <- as.data.frame(sort(high_freq_tfidf))
+high_freq_tfidf_df$names <- rownames(high_freq_tfidf_df)
 
-ggplot(high_freq_df, aes(reorder(names,high_freq), high_freq)) +
+ggplot(high_freq_tfidf_df, aes(reorder(names,high_freq_tfidf), high_freq_tfidf)) +
   geom_bar(stat="identity", fill = "coral1") + coord_flip() + 
   xlab("Terms") + ylab("Frequency") +
   ggtitle("Term frequencies")
 ```
 
-Word cloud to visually represent the highest frequency terms. 
+### Bag of Words
 
 ```{r}
-words <- sort(rowSums(tweets_m), decreasing = TRUE)
-word_df <- data.frame(word = names(words), freq = words)
+tweets_tdm_bow <- TermDocumentMatrix(tweets_corpus)
+tweets_tdm_bow
 
-wordcloud(words = word_df$word, freq = word_df$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
+tweets_m_bow <- as.matrix(tweets_tdm_bow)
+dim(tweets_m_bow)
+
+# Display a subset of the matrix
+tweets_m_bow[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_tdm_bow_sparse <- removeSparseTerms(tweets_tdm_bow, 0.99) 
+tweets_tdm_bow_sparse
+
+tweets_m_bow <- as.matrix(tweets_tdm_bow_sparse)
+dim(tweets_m_bow)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_bow[14:28, 10:15]
+```
+
+```{r}
+ freq_bow <- rowSums(tweets_m_bow)
+
+# # Plot of frequency terms appearing by summing the content of all terms
+# plot(sort(freq_bow, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Bag of Words -based rank", ylab = "TF-IDF")
+```
+
+```{r}
+# Show most frequent terms and their frequencies
+high_freq_bow <- tail(sort(freq_bow), n=15)
+high_freq_bow_df <- as.data.frame(sort(high_freq_bow))
+high_freq_bow_df$names <- rownames(high_freq_bow_df)
+
+ggplot(high_freq_bow_df, aes(reorder(names,high_freq_bow), high_freq_bow)) +
+  geom_bar(stat="identity", fill = "darkseagreen") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
+```
+
+### N-grams
+
+```{r}
+Unigramtokenizer <- function(x) {
+        unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)}
+
+Bigramtokenizer <- function(x) {
+        unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
+```
+
+#### Unigrams
+
+```{r, warning = FALSE}
+# Unigram TDM
+tweets_tdm_uni <- TermDocumentMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
+
+tweets_m_uni <- as.matrix(tweets_tdm_uni)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix
+tweets_m_uni[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_tdm_uni_sparse <- removeSparseTerms(tweets_tdm_uni, 0.99) 
+tweets_tdm_uni_sparse
+
+tweets_m_uni <- as.matrix(tweets_tdm_uni_sparse)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_uni[14:28, 10:15]
+```
+
+```{r}
+freq_uni <- rowSums(tweets_m_uni)
+
+# Plot of frequency terms appearing by summing the content of all terms
+# plot(sort(freq_uni, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Unigram-based rank", ylab = "TF-IDF")
+```
+
+```{r}
+# Show most frequent terms and their frequencies
+high_freq_uni <- tail(sort(freq_uni), n=15)
+high_freq_uni_df <- as.data.frame(sort(high_freq_uni))
+high_freq_uni_df$names <- rownames(high_freq_uni_df)
+
+ggplot(high_freq_uni_df, aes(reorder(names,high_freq_uni), high_freq_uni)) +
+  geom_bar(stat="identity", fill = "cornflowerblue") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
+```
+
+#### Bigrams
+
+```{r, warning = FALSE}
+
+tweets_tdm_bin <- TermDocumentMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))
+
+tweets_m_bin <- as.matrix(tweets_tdm_bin)
+dim(tweets_m_bin)
+
+# Display a subset of the matrix
+tweets_m_bin[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_tdm_bin_sparse <- removeSparseTerms(tweets_tdm_bin, 0.99) 
+tweets_tdm_bin_sparse
+
+tweets_m_bin <- as.matrix(tweets_tdm_bin_sparse)
+dim(tweets_m_bin)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_bin[14:28, 10:15]
+```
+
+```{r}
+freq_bin <- rowSums(tweets_m_bin)
+
+# Plot of frequency terms appearing by summing the content of all terms
+# plot(sort(freq_uni, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Bigram-based rank", ylab = "TF-IDF")
+```
+
+```{r, warning = FALSE}
+# Show most frequent terms and their frequencies
+high_freq_bin <- tail(sort(freq_bin), n=15)
+high_freq_bin_df <- as.data.frame(sort(high_freq_bin))
+high_freq_bin_df$names <- rownames(high_freq_bin_df)
+
+ggplot(high_freq_bin_df, aes(reorder(names,high_freq_bin), high_freq_bin)) +
+  geom_bar(stat="identity", fill = "darkorange") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
 ```
