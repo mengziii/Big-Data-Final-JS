@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, message=FALSE}
-#loading needed libraries
+# Load needed libraries
 library(tidyverse)
 library(ROSE)
 library(tidytext)
@@ -19,6 +19,10 @@ library(ggplot2)
 library(patchwork)
 library(gt)
 library(tm)
+library(knitr)
+library(NLP)
+library(wordcloud)
+library(RColorBrewer)
 ```
 
 ## Dataset
@@ -47,7 +51,7 @@ table(twitter_balanced$airline_sentiment)
 ```
 
 ```{r}
-#declare each variable from df for easy use
+# Declare each variable from df for easy use
 tweet_id <- twitter_balanced$tweet_id
 airline_sentiment <- twitter_balanced$airline_sentiment
 airline_sentiment_confidence <- twitter_balanced$airline_sentiment_confidence
@@ -64,7 +68,7 @@ tweet_created <- twitter_balanced$tweet_created
 tweet_location <- twitter_balanced$tweet_location
 user_TZ <- twitter_balanced$user_timezone
 
-#display first 6 rows of data
+# Display first 6 rows of data
 head(twitter_balanced)
 ```
 
@@ -73,43 +77,44 @@ head(twitter_balanced)
 ```{r}
 str(twitter_balanced)
 
-#change airline_sentiment to factors
+# Change airline_sentiment to factors
 twitter_balanced$airline <- as.factor(twitter_balanced$airline)
 twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
 twitter_balanced$airline_sentiment_gold <- as.factor(twitter_balanced$airline_sentiment_gold)
 twitter_balanced$negativereason <- as.factor(twitter_balanced$negativereason)
 twitter_balanced$negativereason_gold <- as.factor(twitter_balanced$negativereason_gold)
 
-#change tweet_created from char to date
+# Change tweet_created from char to date
 twitter_balanced$tweet_created <- as.Date(twitter_balanced$tweet_created)
 
-#rerun str and summary to display updated variables
+# Rerun str and summary to display updated variables
 str(twitter_balanced)
 
-#display summary
+# Display summary of the twitter_balanced data frame
 summary(twitter_balanced)
 
-#standard deviation for numerical variables
+# Standard deviation for numerical variables
 sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retweet_count)
 ```
 
 ```{r}
-#check for and count any NAs
-unlist(lapply(lapply(twitter_balanced, is.na), sum)) #unlist to convert the list output to a vector for easier readability
+# Check for and count any NAs
+# Unlist to convert the list output to a vector for easier readability
+unlist(lapply(lapply(twitter_balanced, is.na), sum)) 
 ```
 ```{r warning = FALSE}
-#Check for any outliers in the numerical variables
+# Check for any outliers in the numerical variables
 
-#airline sentiment confidence
+# Airline sentiment confidence
 ASC_box <- twitter_balanced %>% ggplot() + 
   geom_boxplot(aes(y = airline_sentiment_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
-#negative reason confidence
+# Negative reason confidence
 NRC_box <- twitter_balanced %>% 
   ggplot() + 
   geom_boxplot(aes(y = negativereason_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
 
-#retweet count
+# Retweet count
 RC_box <- twitter_balanced %>% 
   ggplot() + 
   geom_boxplot(aes(y = retweet_count), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
@@ -119,7 +124,7 @@ outlier_fig
 ```
 
 ```{r}
-#frequency of the factor and discrete variables
+# Frequency of the factor and discrete variables
 table(airline)
 table(airline_sentiment)
 table(negativereason)
@@ -129,31 +134,31 @@ table(retweet_count)
 ```
 
 ```{r}
-#airline
+# Airline
 airline_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline, fill = airline)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline") + labs(y = "Count", x = "Airline", fill = "Airline")
 
-#airline sentiment
+# Airline sentiment
 AS_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline_sentiment, fill = airline_sentiment)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline Sentiment (Class)") + labs(y = "Count", x = "Airline Sentiment (Class)", fill = "Airline Sentiment (Class)")
 
-#airline sentiment
+# Airline sentiment
 ASG_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = airline_sentiment_gold, fill = airline_sentiment_gold)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Airline Sentiment - Gold") + labs(y = "Count", x = "Airline Sentiment - Gold", fill = "Airline Sentiment - Gold")
 
-#negative reason
+# Negative reason
 NR_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = negativereason, fill = negativereason)) +
   theme(axis.text.x = element_blank()) +
   ggtitle("Negative Reason") + labs(y = "Count", x = "Negative Reason", fill = "Negative Reason")
 
-#negative reason gold
+# Negative reason gold
 NRG_bar <- twitter_balanced %>% ggplot() + 
   geom_bar(aes(x = negativereason_gold, fill = negativereason_gold)) +
   theme(axis.text.x = element_blank()) +
@@ -166,66 +171,115 @@ NR_bar
 
 ## Preprocessing
 
-```{r}
-#Tokenization into unigrams
-#tweets_unigram <- Boost_tokenizer(tweets_text)
-```
+### Tokenization
 
-### 
+Text is tokenized to unigrams to separate the words for further processing. 
 
 ```{r}
 tweets_text <- twitter_balanced$text
 str(tweets_text)
 
+# Tokenization
 tweets_unigram <- Boost_tokenizer(tweets_text)
 
+# Create a corpus
 tweets_source <- VectorSource(tweets_text)
 
-tweets_corpus <- VCorpus(tweets_source)
+tweets_corpus <- Corpus(tweets_source)
+
+tweets_corpus <- tm_map(tweets_corpus, function(x) iconv(enc2utf8(x), sub = "byte"))
 ```
 
-Create a function to process the data: 
+```{r, warning = FALSE}
+tweets_corpus <- tm_map(tweets_corpus, content_transformer(tolower)) # Convert all text to lowercase
 
-- remove whitespace
-- remove punctuation
-- convert all text to lowercase
-- remove stop words
-- stem the words
-- remove numbers
+tweets_corpus <- tm_map(tweets_corpus, removePunctuation) # Remove all punctuation
 
-```{r}
-clean_corpus <- function(corpus){
-  corpus <- tm_map(corpus, stripWhitespace)
-  corpus <- tm_map(corpus, removePunctuation)
-  corpus <- tm_map(corpus, content_transformer(tolower))
-  corpus <- tm_map(corpus, removeWords, stopwords("en"))
-  corpus <- tm_map(corpus, stemDocument)
-  corpus <- tm_map(corpus, removeNumbers)
-  
-  return(corpus)
+tweets_corpus <- tm_map(tweets_corpus, removeNumbers) # Remove numbers
+
+# Custom function to remove extra elements/characters from the text
+textprocessing <- function(x){
+  gsub("http[[:alnum:]]*",'', x)
+  gsub('http\\S+\\s*', '', x) # Remove URLs
+  gsub('\\b+RT', '', x) # Remove RT
+  gsub('#\\S+', '', x) # Remove Hashtags
+  gsub('@\\S+', '', x) # Remove Mentions
+  gsub('[[:cntrl:]]', '', x) # Remove Controls and special characters
+  gsub("\\d", '', x) # Remove Controls and special characters
+  gsub('[[:punct:]]', '', x) # Remove Punctuations
+  gsub("^[[:space:]]*","",x) # Remove leading whitespaces
+  gsub("[[:space:]]*$","",x) # Remove trailing whitespaces
+  gsub(' +',' ',x) # Remove extra whitespaces 
 }
+
+tweets_corpus <- tm_map(tweets_corpus, textprocessing)
+
+tweets_corpus <- tm_map(tweets_corpus, stripWhitespace) # Remove whitespace
+
+# Create custom list of stop words
+stop_words <- c(stopwords("english"), "rt","southwestair", "americanair", "delta", "united", "usairway", "virginamerica", "jetblue", "amp")
+
+tweets_corpus <- tm_map(tweets_corpus, removeWords, stop_words) # Remove stop words
+
+# Create a copy of tweets pre-stemming
+tweets_corpus_copy <- tweets_corpus
+
+tweets_corpus <- tm_map(tweets_corpus, stemDocument) # Stem the text
+
+# Display a row of the cleaned corpus
+tweets_corpus[[148]][1]
 ```
 
-```{r}
-clean_corp <- clean_corpus(tweets_corpus)
-clean_corp[[148]][1]
-```
-Create a term-document matrix
+### Term-Document Matrix
 
-```{r}
-tweets_tdm <- TermDocumentMatrix(clean_corp)
+Create a term-document matrix then reduce the matrix down so it only contains a certain \% of the terms. 
+
+```{r, warning = FALSE}
+tweets_tdm <- TermDocumentMatrix(tweets_corpus,control = list(weighting = weightTfIdf))
 tweets_tdm
 
 tweets_m <- as.matrix(tweets_tdm)
 dim(tweets_m)
 
-tweets_m[14:28, 20:22]
+# Display a subset of the matrix
+tweets_m[14:28, 10:15]
 
-tweets_tdm_rm_sparse <- removeSparseTerms(tweets_tdm, 0.99) #reduce the matrix by removing the low frequency terms
+# Reduce the matrix by removing the low frequency terms
+tweets_tdm_rm_sparse <- removeSparseTerms(tweets_tdm, 0.99) 
 tweets_tdm_rm_sparse
 
 tweets_m <- as.matrix(tweets_tdm_rm_sparse)
 dim(tweets_m)
 
-tweets_m[14:28, 10:22]
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m[14:28, 10:15]
+```
+```{r}
+freq <- rowSums(tweets_m)
+
+head(freq)
+tail(freq)
+
+# Plot of frequency terms appearing by summing the content of all terms
+plot(sort(freq, decreasing = TRUE), col = "blue", main = "Word TF-IDF Frequencies", xlab = "TF-IDF-based rank", ylab = "TF-IDF")
+```
+```{r}
+# Show most frequent terms and their frequencies
+high_freq <- tail(sort(freq), n=10)
+high_freq_df <- as.data.frame(sort(high_freq))
+high_freq_df$names <- rownames(high_freq_df)
+
+ggplot(high_freq_df, aes(reorder(names,high_freq), high_freq)) +
+  geom_bar(stat="identity", fill = "coral1") + coord_flip() + 
+  xlab("Terms") + ylab("Frequency") +
+  ggtitle("Term frequencies")
+```
+
+Word cloud to visually represent the highest frequency terms. 
+
+```{r}
+words <- sort(rowSums(tweets_m), decreasing = TRUE)
+word_df <- data.frame(word = names(words), freq = words)
+
+wordcloud(words = word_df$word, freq = word_df$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
 ```
