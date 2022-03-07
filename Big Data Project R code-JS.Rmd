@@ -23,6 +23,9 @@ library(knitr)
 library(NLP)
 library(wordcloud)
 library(RColorBrewer)
+library(rpart)
+library(randomForest)
+library(caTools)
 ```
 
 ## Dataset
@@ -168,17 +171,6 @@ frequency_fig1 <- airline_bar + AS_bar + ASG_bar + NRG_bar + plot_layout(ncol = 
 frequency_fig1
 NR_bar
 ```
-## Train / Test Data
-
-```{r }
-smp_size <- floor(0.7 * nrow(twitter_balanced))
-
-set.seed(924)
-train_ind <- sample(seq_len(nrow(twitter_balanced)), size = smp_size)
-
-tweet_train <- twitter_balanced[train_ind, ]
-tweet_test <- twitter_balanced[-train_ind, ]
-```
 
 ## Preprocessing
 
@@ -234,17 +226,19 @@ tweets_corpus <- tm_map(tweets_corpus, stemDocument) # Stem the text
 # Display a row of the cleaned corpus
 tweets_corpus[[148]][1]
 ```
-### Term-Document: TF-IDF Weights
+## Feature Selection 
+
+#### Term-Document: TF-IDF Weights
 
 Create a term-document matrix with TF-IDF weights then reduce the matrix down so it only contains a certain \% of the terms. 
 
-Weights are calculated using the following formula: 
+Weights are calculated using the following formula:    
 
 $TF-IDF(t)=TF(t) \times IDF(t)$
 \n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
 
 ```{r, warning = FALSE}
-tweets_tdm_tfidf <- TermDocumentMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
+tweets_tdm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
 tweets_tdm_tfidf
 
 tweets_m_tfidf <- as.matrix(tweets_tdm_tfidf)
@@ -263,29 +257,12 @@ dim(tweets_m_tfidf)
 # Display a subset of the matrix after the low frequency terms were removed
 tweets_m_tfidf[14:28, 10:15]
 ```
-```{r}
-freq_tfidf <- rowSums(tweets_m_tfidf)
 
-# # Plot of frequency terms appearing by summing the content of all terms
-# plot(sort(freq_tfidf, decreasing = TRUE), col = "blue", main = "Word TF-IDF Frequencies", xlab = "TF-IDF-based rank", ylab = "TF-IDF")
-```
+
+#### Bag of Words
 
 ```{r}
-# Show most frequent terms and their frequencies
-high_freq_tfidf <- tail(sort(freq_tfidf), n=15)
-high_freq_tfidf_df <- as.data.frame(sort(high_freq_tfidf))
-high_freq_tfidf_df$names <- rownames(high_freq_tfidf_df)
-
-ggplot(high_freq_tfidf_df, aes(reorder(names,high_freq_tfidf), high_freq_tfidf)) +
-  geom_bar(stat="identity", fill = "coral1") + coord_flip() + 
-  xlab("Terms") + ylab("Frequency") +
-  ggtitle("Term frequencies")
-```
-
-### Bag of Words
-
-```{r}
-tweets_tdm_bow <- TermDocumentMatrix(tweets_corpus)
+tweets_tdm_bow <- DocumentTermMatrix(tweets_corpus)
 tweets_tdm_bow
 
 tweets_m_bow <- as.matrix(tweets_tdm_bow)
@@ -305,40 +282,19 @@ dim(tweets_m_bow)
 tweets_m_bow[14:28, 10:15]
 ```
 
-```{r}
- freq_bow <- rowSums(tweets_m_bow)
-
-# # Plot of frequency terms appearing by summing the content of all terms
-# plot(sort(freq_bow, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Bag of Words -based rank", ylab = "TF-IDF")
-```
-
-```{r}
-# Show most frequent terms and their frequencies
-high_freq_bow <- tail(sort(freq_bow), n=15)
-high_freq_bow_df <- as.data.frame(sort(high_freq_bow))
-high_freq_bow_df$names <- rownames(high_freq_bow_df)
-
-ggplot(high_freq_bow_df, aes(reorder(names,high_freq_bow), high_freq_bow)) +
-  geom_bar(stat="identity", fill = "darkseagreen") + coord_flip() + 
-  xlab("Terms") + ylab("Frequency") +
-  ggtitle("Term frequencies")
-```
-
-### N-grams
+#### Unigrams
 
 ```{r}
 Unigramtokenizer <- function(x) {
         unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)}
 
-Bigramtokenizer <- function(x) {
-        unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
+#Bigramtokenizer <- function(x) {
+#        unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
 ```
-
-#### Unigrams
 
 ```{r, warning = FALSE}
 # Unigram TDM
-tweets_tdm_uni <- TermDocumentMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
+tweets_tdm_uni <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
 
 tweets_m_uni <- as.matrix(tweets_tdm_uni)
 dim(tweets_m_uni)
@@ -357,63 +313,118 @@ dim(tweets_m_uni)
 tweets_m_uni[14:28, 10:15]
 ```
 
+## Classifier
+
+Load in negative and positive words to be referenced for the classification step. 
 ```{r}
-freq_uni <- rowSums(tweets_m_uni)
+# neg_words <- read.table("negative words.txt", header = F, stringsAsFactors = F)[,1]
+# 
+# pos_words <- read.table("positive words.txt", header = F, stringsAsFactors = F)[,1]
+# 
+# twitter_balanced$neg <- sapply(tweets_corpus, tm_term_score, neg_words)
+#twitter_balanced$pos <- sapply(tweets_corpus, tm_term_score, pos_words)
 
-# Plot of frequency terms appearing by summing the content of all terms
-# plot(sort(freq_uni, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Unigram-based rank", ylab = "TF-IDF")
+#twitter_balanced$text <- NULL
 ```
 
-```{r}
-# Show most frequent terms and their frequencies
-high_freq_uni <- tail(sort(freq_uni), n=15)
-high_freq_uni_df <- as.data.frame(sort(high_freq_uni))
-high_freq_uni_df$names <- rownames(high_freq_uni_df)
+### Decision Tree 
 
-ggplot(high_freq_uni_df, aes(reorder(names,high_freq_uni), high_freq_uni)) +
-  geom_bar(stat="identity", fill = "cornflowerblue") + coord_flip() + 
-  xlab("Terms") + ylab("Frequency") +
-  ggtitle("Term frequencies")
-```
-
-#### Bigrams
-
-```{r, warning = FALSE}
-
-tweets_tdm_bin <- TermDocumentMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))
-
-tweets_m_bin <- as.matrix(tweets_tdm_bin)
-dim(tweets_m_bin)
-
-# Display a subset of the matrix
-tweets_m_bin[14:28, 10:15]
-
-# Reduce the matrix by removing the low frequency terms
-tweets_tdm_bin_sparse <- removeSparseTerms(tweets_tdm_bin, 0.99) 
-tweets_tdm_bin_sparse
-
-tweets_m_bin <- as.matrix(tweets_tdm_bin_sparse)
-dim(tweets_m_bin)
-
-# Display a subset of the matrix after the low frequency terms were removed
-tweets_m_bin[14:28, 10:15]
-```
+#### TF-IDF
 
 ```{r}
-freq_bin <- rowSums(tweets_m_bin)
-
-# Plot of frequency terms appearing by summing the content of all terms
-# plot(sort(freq_uni, decreasing = TRUE), col = "blue", main = "Word Frequencies", xlab = "Bigram-based rank", ylab = "TF-IDF")
+# <- rpart(airline_sentiment~., data = train_tfidf)
 ```
 
-```{r, warning = FALSE}
-# Show most frequent terms and their frequencies
-high_freq_bin <- tail(sort(freq_bin), n=15)
-high_freq_bin_df <- as.data.frame(sort(high_freq_bin))
-high_freq_bin_df$names <- rownames(high_freq_bin_df)
+#### Bag-of-Words
 
-ggplot(high_freq_bin_df, aes(reorder(names,high_freq_bin), high_freq_bin)) +
-  geom_bar(stat="identity", fill = "darkorange") + coord_flip() + 
-  xlab("Terms") + ylab("Frequency") +
-  ggtitle("Term frequencies")
+```{r}
+
+```
+
+#### Unigram
+
+```{r}
+
+```
+
+### Random Forest
+
+#### TF-IDF
+
+```{r}
+m_tfidf <- as.data.frame(tweets_m_tfidf)
+colnames(m_tfidf) <- make.names(colnames(m_tfidf))
+m_tfidf$class = twitter_balanced$airline_sentiment
+
+prop.table(table(m_tfidf$class))
+
+split_tfidf = sample.split(m_tfidf$class, SplitRatio = 0.7)
+train_tfidf = subset(m_tfidf, split == TRUE)
+test_tfidf = subset(m_tfidf, split == FALSE)
+
+RF_model_tfidf <- randomForest(class~., data = train_tfidf)
+
+predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
+
+table(test_tfidf$class, predictRF_tfidf)
+```
+
+#### Bag-of-Words
+
+```{r}
+m_bow <- as.data.frame(tweets_m_bow)
+colnames(m_bow) <- make.names(colnames(m_bow))
+m_bow$class = twitter_balanced$airline_sentiment
+
+prop.table(table(m_bow$class))
+
+split_bow = sample.split(m_bow$class, SplitRatio = 0.7)
+train_bow = subset(m_bow, split == TRUE)
+test_bow = subset(m_bow, split == FALSE)
+
+RF_model_bow <- randomForest(class~., data = train_bow)
+
+predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
+
+table(test_bow$class, predictRF_bow)
+```
+
+#### Unigram
+
+```{r}
+m_uni <- as.data.frame(tweets_m_uni)
+colnames(m_uni) <- make.names(colnames(m_uni))
+m_uni$class = twitter_balanced$airline_sentiment
+
+prop.table(table(m_uni$class))
+
+split_uni = sample.split(m_uni$class, SplitRatio = 0.7)
+train_uni = subset(m_uni, split == TRUE)
+test_uni = subset(m_uni, split == FALSE)
+
+RF_model_uni <- randomForest(class~., data = train_uni)
+
+predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
+
+table(test_uni$class, predictRF_uni)
+```
+
+### Naive Bayes
+
+#### TF-IDF
+
+```{r}
+
+```
+
+#### Bag-of-Words
+
+```{r}
+
+```
+
+#### Unigram
+
+```{r}
+
 ```
