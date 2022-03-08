@@ -7,7 +7,7 @@ Supervisor: Dr. Tamer Abdou
 
 ### Project description
 Using Natural Language Processing (NLP) on the Twitter US airline sentiment dataset to classify and understand the sentiments from the text. It also identifies the more appropriate classifier between decision trees and NAive Bayes. 
-> [Initial code](https://github.com/mengziii/Big-Data-Final-JS/blob/d90c5f522ec1b1b8896a059ade3ea83d9c62e9f8/Big%20Data%20Project%20R%20initial%20code-JS.Rmd) can be read with the first two classifiers applied
+> [Initial code](https://github.com/mengziii/Big-Data-Final-JS/blob/d90c5f522ec1b1b8896a059ade3ea83d9c62e9f8/Big%20Data%20Project%20R%20initial%20code-JS.Rmd) can be read with the three classifiers applied. 
 
 > [Partial report](https://github.com/mengziii/Big-Data-Final-JS/blob/80cac814f043aae06446bdaaa94edc8f430b8cf4/CIND%20820%20Big%20Data%20Analytics%20Project%20-%20Jossa%20Soto.docx) can be downloaded
 
