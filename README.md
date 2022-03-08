@@ -10,3 +10,6 @@ Using Natural Language Processing (NLP) on the Twitter US airline sentiment data
 
 ### Description of Data
 The dataset contains 14,640 entries with 15 variables including the tweet text and class. The data is imbalanced with a large fraction of tweets classified as negative. Data is balanced by under sampling the negative and neutral sentiments. This results in 7,363 records in the subset that is used in the project.
+
+### Methodology
+The data is preprocessed where various elements such as punctuation, numbers, URLs, whitespaces are removed. Once the data is cleaned, is tokenized using three techniques: TF-IDF, Bag-of-Words, and Unigrams. Once the data is tokenized using the three different techniques, the algorithms decision tree, random forest, and Naive Bayes will be applied on the data. The data will be trained and tested through each algorithm then accuracy measures (recall, precision, F-score), efficiency, and stability will be assessed. 
