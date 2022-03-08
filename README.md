@@ -7,6 +7,8 @@ Supervisor: Dr. Tamer Abdou
 
 ### Project description
 Using Natural Language Processing (NLP) on the Twitter US airline sentiment dataset to classify and understand the sentiments from the text. It also identifies the more appropriate classifier between decision trees and NAive Bayes. 
+> Initial code can be found at Big Data Project R initial code-JS.Rmd
+> Initial report can be downloaded 
 
 ### Description of Data
 The dataset contains 14,640 entries with 15 variables including the tweet text and class. The data is imbalanced with a large fraction of tweets classified as negative. Data is balanced by under sampling the negative and neutral sentiments. This results in 7,363 records in the subset that is used in the project.
