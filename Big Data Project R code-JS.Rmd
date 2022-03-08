@@ -1,11 +1,11 @@
 ---
 title: "CIND 820 Big Data Final Project"
 author: "Jossa Soto"
-date: "13/02/2022"
+date: "06/03/2022"
 output:
+  pdf_document: default
   html_document:
     keep_md: yes
-  pdf_document: default
 ---
 
 ```{r setup, message=FALSE}
@@ -238,20 +238,20 @@ $TF-IDF(t)=TF(t) \times IDF(t)$
 \n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
 
 ```{r, warning = FALSE}
-tweets_tdm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
-tweets_tdm_tfidf
+tweets_dtm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
+tweets_dtm_tfidf
 
-tweets_m_tfidf <- as.matrix(tweets_tdm_tfidf)
+tweets_m_tfidf <- as.matrix(tweets_dtm_tfidf)
 dim(tweets_m_tfidf)
 
 # Display a subset of the matrix
 tweets_m_tfidf[14:28, 10:15]
 
 # Reduce the matrix by removing the low frequency terms
-tweets_tdm_tfidf_sparse <- removeSparseTerms(tweets_tdm_tfidf, 0.99) 
-tweets_tdm_tfidf_sparse
+tweets_dtm_tfidf_sparse <- removeSparseTerms(tweets_dtm_tfidf, 0.99) 
+tweets_dtm_tfidf_sparse
 
-tweets_m_tfidf <- as.matrix(tweets_tdm_tfidf_sparse)
+tweets_m_tfidf <- as.matrix(tweets_dtm_tfidf_sparse)
 dim(tweets_m_tfidf)
 
 # Display a subset of the matrix after the low frequency terms were removed
@@ -262,20 +262,20 @@ tweets_m_tfidf[14:28, 10:15]
 #### Bag of Words
 
 ```{r}
-tweets_tdm_bow <- DocumentTermMatrix(tweets_corpus)
-tweets_tdm_bow
+tweets_dtm_bow <- DocumentTermMatrix(tweets_corpus)
+tweets_dtm_bow
 
-tweets_m_bow <- as.matrix(tweets_tdm_bow)
+tweets_m_bow <- as.matrix(tweets_dtm_bow)
 dim(tweets_m_bow)
 
 # Display a subset of the matrix
 tweets_m_bow[14:28, 10:15]
 
 # Reduce the matrix by removing the low frequency terms
-tweets_tdm_bow_sparse <- removeSparseTerms(tweets_tdm_bow, 0.99) 
-tweets_tdm_bow_sparse
+tweets_dtm_bow_sparse <- removeSparseTerms(tweets_dtm_bow, 0.99) 
+tweets_dtm_bow_sparse
 
-tweets_m_bow <- as.matrix(tweets_tdm_bow_sparse)
+tweets_m_bow <- as.matrix(tweets_dtm_bow_sparse)
 dim(tweets_m_bow)
 
 # Display a subset of the matrix after the low frequency terms were removed
@@ -287,26 +287,23 @@ tweets_m_bow[14:28, 10:15]
 ```{r}
 Unigramtokenizer <- function(x) {
         unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)}
-
-#Bigramtokenizer <- function(x) {
-#        unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
 ```
 
 ```{r, warning = FALSE}
-# Unigram TDM
-tweets_tdm_uni <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
+# Unigram dtm
+tweets_dtm_uni <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
 
-tweets_m_uni <- as.matrix(tweets_tdm_uni)
+tweets_m_uni <- as.matrix(tweets_dtm_uni)
 dim(tweets_m_uni)
 
 # Display a subset of the matrix
 tweets_m_uni[14:28, 10:15]
 
 # Reduce the matrix by removing the low frequency terms
-tweets_tdm_uni_sparse <- removeSparseTerms(tweets_tdm_uni, 0.99) 
-tweets_tdm_uni_sparse
+tweets_dtm_uni_sparse <- removeSparseTerms(tweets_dtm_uni, 0.99) 
+tweets_dtm_uni_sparse
 
-tweets_m_uni <- as.matrix(tweets_tdm_uni_sparse)
+tweets_m_uni <- as.matrix(tweets_dtm_uni_sparse)
 dim(tweets_m_uni)
 
 # Display a subset of the matrix after the low frequency terms were removed
@@ -314,18 +311,6 @@ tweets_m_uni[14:28, 10:15]
 ```
 
 ## Classifier
-
-Load in negative and positive words to be referenced for the classification step. 
-```{r}
-# neg_words <- read.table("negative words.txt", header = F, stringsAsFactors = F)[,1]
-# 
-# pos_words <- read.table("positive words.txt", header = F, stringsAsFactors = F)[,1]
-# 
-# twitter_balanced$neg <- sapply(tweets_corpus, tm_term_score, neg_words)
-#twitter_balanced$pos <- sapply(tweets_corpus, tm_term_score, pos_words)
-
-#twitter_balanced$text <- NULL
-```
 
 ### Decision Tree 
 
@@ -358,9 +343,10 @@ m_tfidf$class = twitter_balanced$airline_sentiment
 
 prop.table(table(m_tfidf$class))
 
+set.seed(439)
 split_tfidf = sample.split(m_tfidf$class, SplitRatio = 0.7)
-train_tfidf = subset(m_tfidf, split == TRUE)
-test_tfidf = subset(m_tfidf, split == FALSE)
+train_tfidf = subset(m_tfidf, split_tfidf == TRUE)
+test_tfidf = subset(m_tfidf, split_tfidf == FALSE)
 
 RF_model_tfidf <- randomForest(class~., data = train_tfidf)
 
@@ -378,9 +364,10 @@ m_bow$class = twitter_balanced$airline_sentiment
 
 prop.table(table(m_bow$class))
 
+set.seed(989)
 split_bow = sample.split(m_bow$class, SplitRatio = 0.7)
-train_bow = subset(m_bow, split == TRUE)
-test_bow = subset(m_bow, split == FALSE)
+train_bow = subset(m_bow, split_bow == TRUE)
+test_bow = subset(m_bow, split_bow == FALSE)
 
 RF_model_bow <- randomForest(class~., data = train_bow)
 
@@ -398,9 +385,10 @@ m_uni$class = twitter_balanced$airline_sentiment
 
 prop.table(table(m_uni$class))
 
+set.seed(825)
 split_uni = sample.split(m_uni$class, SplitRatio = 0.7)
-train_uni = subset(m_uni, split == TRUE)
-test_uni = subset(m_uni, split == FALSE)
+train_uni = subset(m_uni, split_uni == TRUE)
+test_uni = subset(m_uni, split_uni == FALSE)
 
 RF_model_uni <- randomForest(class~., data = train_uni)
 
