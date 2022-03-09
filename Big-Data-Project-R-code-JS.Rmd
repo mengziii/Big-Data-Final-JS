@@ -1,0 +1,466 @@
+---
+title: "CIND 820 Big Data Final Project"
+author: "Jossa Soto"
+date: "06/03/2022"
+output:
+  html_document:
+    keep_md: yes
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, message=FALSE}
+# Load needed libraries
+library(tidyverse)
+library(ROSE)
+library(tidytext)
+library(glue)
+library(stringr)
+library(ggplot2)
+library(patchwork)
+library(gt)
+library(tm)
+library(knitr)
+library(NLP)
+library(wordcloud)
+library(RColorBrewer)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(caTools)
+library(caret)
+library(e1071)
+```
+
+## Dataset
+```{r}
+twitter_balanced <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
+
+table(twitter_balanced$airline_sentiment)
+```
+Data is imbalanced so sampling will be done so that the subset is balanced. This will be done by undersampling the negative and neutral group. 
+
+```{r}
+twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
+
+twitter_pos_ind <- which(twitter_balanced$airline_sentiment == "positive")
+twitter_neg_ind <- which(twitter_balanced$airline_sentiment == "negative")
+twitter_neut_ind <- which(twitter_balanced$airline_sentiment == "neutral") 
+
+set.seed(2407)
+nsample <- 2500
+pick_neg <- sample(twitter_neg_ind, nsample)
+pick_neut <- sample(twitter_neut_ind, nsample)
+
+twitter_balanced <- twitter_balanced[c(pick_neg, pick_neut, twitter_pos_ind),] 
+
+table(twitter_balanced$airline_sentiment)
+```
+
+```{r}
+# Declare each variable from df for easy use
+tweet_id <- twitter_balanced$tweet_id
+airline_sentiment <- twitter_balanced$airline_sentiment
+airline_sentiment_confidence <- twitter_balanced$airline_sentiment_confidence
+negativereason <- twitter_balanced$negativereason
+negativereason_confidence <- twitter_balanced$negativereason_confidence
+airline <- twitter_balanced$airline
+airline_sentiment_gold <- twitter_balanced$airline_sentiment_gold
+name <- twitter_balanced$name
+negativereason_gold <- twitter_balanced$negativereason_gold
+retweet_count <- twitter_balanced$retweet_count
+tweet_text <- twitter_balanced$text
+tweet_coord <- twitter_balanced$tweet_coord
+tweet_created <- twitter_balanced$tweet_created
+tweet_location <- twitter_balanced$tweet_location
+user_TZ <- twitter_balanced$user_timezone
+
+# Display first 6 rows of data
+head(twitter_balanced)
+```
+
+## Data Exploration
+
+```{r}
+str(twitter_balanced)
+
+# Change airline_sentiment to factors
+twitter_balanced$airline <- as.factor(twitter_balanced$airline)
+twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
+twitter_balanced$airline_sentiment_gold <- as.factor(twitter_balanced$airline_sentiment_gold)
+twitter_balanced$negativereason <- as.factor(twitter_balanced$negativereason)
+twitter_balanced$negativereason_gold <- as.factor(twitter_balanced$negativereason_gold)
+
+# Change tweet_created from char to date
+twitter_balanced$tweet_created <- as.Date(twitter_balanced$tweet_created)
+
+# Rerun str and summary to display updated variables
+str(twitter_balanced)
+
+# Display summary of the twitter_balanced data frame
+summary(twitter_balanced)
+
+# Standard deviation for numerical variables
+sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retweet_count)
+```
+
+```{r}
+# Check for and count any NAs
+# Unlist to convert the list output to a vector for easier readability
+unlist(lapply(lapply(twitter_balanced, is.na), sum)) 
+```
+```{r warning = FALSE}
+# Check for any outliers in the numerical variables
+
+# Airline sentiment confidence
+ASC_box <- twitter_balanced %>% ggplot() + 
+  geom_boxplot(aes(y = airline_sentiment_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
+
+# Negative reason confidence
+NRC_box <- twitter_balanced %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = negativereason_confidence), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE) 
+
+# Retweet count
+RC_box <- twitter_balanced %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = retweet_count), outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE)
+
+outlier_fig <- ASC_box + NRC_box + RC_box + plot_layout(ncol = 3)
+outlier_fig
+```
+
+```{r}
+# Frequency of the factor and discrete variables
+table(airline)
+table(airline_sentiment)
+table(negativereason)
+table(negativereason_gold)
+table(airline_sentiment_gold)
+table(retweet_count)
+```
+
+```{r}
+# Airline
+airline_bar <- twitter_balanced %>% ggplot() + 
+  geom_bar(aes(x = airline, fill = airline)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline") + labs(y = "Count", x = "Airline", fill = "Airline")
+
+# Airline sentiment
+AS_bar <- twitter_balanced %>% ggplot() + 
+  geom_bar(aes(x = airline_sentiment, fill = airline_sentiment)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline Sentiment (Class)") + labs(y = "Count", x = "Airline Sentiment (Class)", fill = "Airline Sentiment (Class)")
+
+# Airline sentiment
+ASG_bar <- twitter_balanced %>% ggplot() + 
+  geom_bar(aes(x = airline_sentiment_gold, fill = airline_sentiment_gold)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Airline Sentiment - Gold") + labs(y = "Count", x = "Airline Sentiment - Gold", fill = "Airline Sentiment - Gold")
+
+# Negative reason
+NR_bar <- twitter_balanced %>% ggplot() + 
+  geom_bar(aes(x = negativereason, fill = negativereason)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Negative Reason") + labs(y = "Count", x = "Negative Reason", fill = "Negative Reason")
+
+# Negative reason gold
+NRG_bar <- twitter_balanced %>% ggplot() + 
+  geom_bar(aes(x = negativereason_gold, fill = negativereason_gold)) +
+  theme(axis.text.x = element_blank()) +
+  ggtitle("Negative Reason - Gold") + labs(y = "Count", x = "Negative Reason - Gold", fill = "Negative Reason - Gold")
+
+frequency_fig1 <- airline_bar + AS_bar + ASG_bar + NRG_bar + plot_layout(ncol = 2, nrow = 2)
+frequency_fig1
+NR_bar
+```
+
+## Preprocessing
+
+Before preproccessing, a corpus needs to be created from the "text" variable of the dataset. 
+
+```{r, warning = FALSE}
+tweets_text <- twitter_balanced$text
+#tweets_text <- boost_tokenizer(twitter_balanced$text)
+str(tweets_text)
+
+# Create a corpus
+tweets_source <- VectorSource(tweets_text)
+
+tweets_corpus <- Corpus(tweets_source)
+
+tweets_corpus <- tm_map(tweets_corpus, function(x) iconv(enc2utf8(x), sub = "byte"))
+```
+Preprocessing is a multi-step process where extraneous elements including punctuation, number, and stop words are removed, and clean the data to minimize the words that could create noise to the data and reduce the model down to the most important words.  
+
+```{r, warning = FALSE}
+tweets_corpus <- tm_map(tweets_corpus, content_transformer(tolower)) # Convert all text to lowercase
+
+tweets_corpus <- tm_map(tweets_corpus, removePunctuation) # Remove all punctuation
+
+tweets_corpus <- tm_map(tweets_corpus, removeNumbers) # Remove numbers
+
+# Custom function to remove extra elements/characters from the text
+textprocessing <- function(x){
+  gsub("http[[:alnum:]]*",'', x)
+  gsub('http\\S+\\s*', '', x) # Remove URLs
+  gsub('\\b+RT', '', x) # Remove RT
+  gsub('#\\S+', '', x) # Remove Hashtags
+  gsub('@\\S+', '', x) # Remove Mentions
+  gsub('[[:cntrl:]]', '', x) # Remove Controls and special characters
+  gsub("\\d", '', x) # Remove Controls and special characters
+  gsub('[[:punct:]]', '', x) # Remove Punctuations
+  gsub("^[[:space:]]*","",x) # Remove leading whitespaces
+  gsub("[[:space:]]*$","",x) # Remove trailing whitespaces
+  gsub(' +',' ',x) # Remove extra whitespaces 
+}
+
+tweets_corpus <- tm_map(tweets_corpus, textprocessing)
+
+tweets_corpus <- tm_map(tweets_corpus, stripWhitespace) # Remove whitespace
+
+# Create custom list of stop words
+stop_words <- c(stopwords("english"), "rt","southwestair", "americanair", "delta", "united", "usairway", "virginamerica", "jetblue", "amp")
+
+tweets_corpus <- tm_map(tweets_corpus, removeWords, stop_words) # Remove stop words
+
+# Create a copy of tweets pre-stemming
+tweets_corpus_copy <- tweets_corpus
+
+tweets_corpus <- tm_map(tweets_corpus, stemDocument) # Stem the text
+
+# Display a row of the cleaned corpus
+tweets_corpus[[148]][1]
+```
+## Feature Selection 
+
+#### Document-Term: TF-IDF Weights
+
+Create a document-term matrix with TF-IDF weights then reduce the matrix down so it only contains a certain \% of the terms. 
+
+Weights are calculated using the following formula:    
+
+$TF-IDF(t)=TF(t) \times IDF(t)$
+\n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
+
+```{r, warning = FALSE}
+tweets_dtm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
+tweets_dtm_tfidf
+
+tweets_m_tfidf <- as.matrix(tweets_dtm_tfidf)
+dim(tweets_m_tfidf)
+
+# Display a subset of the matrix
+tweets_m_tfidf[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_dtm_tfidf_sparse <- removeSparseTerms(tweets_dtm_tfidf, 0.99) 
+tweets_dtm_tfidf_sparse
+
+tweets_m_tfidf <- as.matrix(tweets_dtm_tfidf_sparse)
+dim(tweets_m_tfidf)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_tfidf[14:28, 10:15]
+```
+
+
+#### Bag of Words
+
+A document-term matrix is created with Bag-of-Words applied. For this model, the corpus is only checked whether the words exist, not where nor the context. 
+
+The DTM is also reduced to remove extraneous words. 
+
+```{r}
+tweets_dtm_bow <- DocumentTermMatrix(tweets_corpus)
+tweets_dtm_bow
+
+tweets_m_bow <- as.matrix(tweets_dtm_bow)
+dim(tweets_m_bow)
+
+# Display a subset of the matrix
+tweets_m_bow[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_dtm_bow_sparse <- removeSparseTerms(tweets_dtm_bow, 0.99) 
+tweets_dtm_bow_sparse
+
+tweets_m_bow <- as.matrix(tweets_dtm_bow_sparse)
+dim(tweets_m_bow)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_bow[14:28, 10:15]
+```
+
+#### Unigrams
+
+Unigrams is a one-term version of n-gram model which predicts the occurrence of the words based on the occurrence of its n-1 previous words. 
+
+The DTM is also reduced to remove extraneous words. 
+
+```{r}
+Unigramtokenizer <- function(x) {
+        unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)}
+```
+
+```{r, warning = FALSE}
+# Unigram dtm
+tweets_dtm_uni <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Unigramtokenizer))
+
+tweets_m_uni <- as.matrix(tweets_dtm_uni)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix
+tweets_m_uni[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_dtm_uni_sparse <- removeSparseTerms(tweets_dtm_uni, 0.99) 
+tweets_dtm_uni_sparse
+
+tweets_m_uni <- as.matrix(tweets_dtm_uni_sparse)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_uni[14:28, 10:15]
+```
+
+## Classifier
+
+### Decision Tree
+
+Apply the Decision Tree algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+
+#### TF-IDF
+
+```{r}
+m_tfidf <- as.data.frame(tweets_m_tfidf)
+colnames(m_tfidf) <- make.names(colnames(m_tfidf))
+m_tfidf$class = twitter_balanced$airline_sentiment
+
+set.seed(439)
+split_tfidf = sample.split(m_tfidf$class, SplitRatio = 0.7)
+train_tfidf = subset(m_tfidf, split_tfidf == TRUE)
+test_tfidf = subset(m_tfidf, split_tfidf == FALSE)
+
+DT_model_tfidf <- rpart(class~., data = train_tfidf)
+
+predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
+
+prp(DT_model_tfidf) #tree visualization
+
+confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
+```
+
+
+#### Bag-of-Words
+
+```{r}
+m_bow <- as.data.frame(tweets_m_bow)
+colnames(m_bow) <- make.names(colnames(m_bow))
+m_bow$class = twitter_balanced$airline_sentiment
+
+set.seed(989)
+split_bow = sample.split(m_bow$class, SplitRatio = 0.7)
+train_bow = subset(m_bow, split_bow == TRUE)
+test_bow = subset(m_bow, split_bow == FALSE)
+
+DT_model_bow <- rpart(class~., data = train_bow)
+
+predictDT_bow <- predict(DT_model_bow, newdata = test_bow, type = "class")
+
+prp(DT_model_bow) #tree visualization
+
+confusionMatrix(table(test_bow$class, predictDT_bow)) #evaluation of confusion matrix
+```
+
+#### Unigram
+
+```{r}
+m_uni <- as.data.frame(tweets_m_uni)
+colnames(m_uni) <- make.names(colnames(m_uni))
+m_uni$class = twitter_balanced$airline_sentiment
+
+set.seed(825)
+split_uni = sample.split(m_uni$class, SplitRatio = 0.7)
+train_uni = subset(m_uni, split_uni == TRUE)
+test_uni = subset(m_uni, split_uni == FALSE)
+
+DT_model_uni <- rpart(class~., data = train_uni)
+
+predictDT_uni <- predict(DT_model_uni, newdata = test_uni, type = "class")
+
+prp(DT_model_uni) #tree visualization
+
+confusionMatrix(table(test_uni$class, predictDT_uni)) #evaluation of confusion matrix
+```
+
+From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word "thank" is the root node followed by "hour" and "great". 
+
+### Random Forest
+
+Apply the Random Forest algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+
+#### TF-IDF
+
+```{r}
+RF_model_tfidf <- randomForest(class~., data = train_tfidf)
+ 
+predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
+
+confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusion matrix 
+```
+
+#### Bag-of-Words
+
+```{r}
+RF_model_bow <- randomForest(class~., data = train_bow)
+
+predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
+
+confusionMatrix(table(test_bow$class, predictRF_bow)) #evaluation of confusion matrix 
+```
+
+#### Unigram
+
+```{r}
+RF_model_uni <- randomForest(class~., data = train_uni)
+
+predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
+
+confusionMatrix(table(test_uni$class, predictRF_uni)) #evaluation of confusion matrix 
+```
+### Naive Bayes
+
+Apply the Naive Bayes algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+
+#### TF-IDF
+
+```{r}
+NB_model_tfidf <- naiveBayes(class~., data = train_tfidf)
+
+predictNB_tfidf <- predict(NB_model_tfidf, newdata = test_tfidf)
+
+confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusion matrix
+```
+
+#### Bag-of-Words
+
+```{r}
+NB_model_bow <- naiveBayes(class~., data = train_bow)
+
+predictNB_bow <- predict(NB_model_bow, newdata = test_bow)
+
+confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion matrix
+```
+
+#### Unigram
+
+```{r}
+NB_model_uni <- naiveBayes(class~., data = train_uni)
+
+predictNB_uni <- predict(NB_model_uni, newdata = test_uni)
+
+confusionMatrix(table(test_uni$class, predictNB_uni)) #evaluation of confusion matrix
+```
+
