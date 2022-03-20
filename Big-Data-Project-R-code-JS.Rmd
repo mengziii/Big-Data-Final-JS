@@ -107,7 +107,7 @@ sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retw
 ```{r}
 # Check for and count any NAs
 # Unlist to convert the list output to a vector for easier readability
-unlist(lapply(lapply(twitter_balanced, is.na), sum)) 
+unlist(lapply(lapply(twitter_balanced, is.na), sum))
 ```
 ```{r warning = FALSE}
 # Check for any outliers in the numerical variables
@@ -292,8 +292,7 @@ dim(tweets_m_bow)
 # Display a subset of the matrix after the low frequency terms were removed
 tweets_m_bow[14:28, 10:15]
 ```
-
-#### Unigrams
+#### Unigrams (try bigram + trigram as well)
 
 Unigrams is a one-term version of n-gram model which predicts the occurrence of the words based on the occurrence of its n-1 previous words. 
 
@@ -338,18 +337,51 @@ m_tfidf <- as.data.frame(tweets_m_tfidf)
 colnames(m_tfidf) <- make.names(colnames(m_tfidf))
 m_tfidf$class = twitter_balanced$airline_sentiment
 
-set.seed(439)
+set.seed(439) #use repeated k-fold validation to repeat then record 20 accuracy scores in a table to proper compare the three classifiers (parametric/non-parametric tests on the mean)
+
 split_tfidf = sample.split(m_tfidf$class, SplitRatio = 0.7)
 train_tfidf = subset(m_tfidf, split_tfidf == TRUE)
 test_tfidf = subset(m_tfidf, split_tfidf == FALSE)
 
-DT_model_tfidf <- rpart(class~., data = train_tfidf)
+DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
 
-predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
+predictDT_tfidf <- xpred.rpart(DT_model_tfidf, xval = 10)
+
+summary(predictDT_tfidf)
 
 prp(DT_model_tfidf) #tree visualization
 
-confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
+printcp(DT_model_tfidf)
+
+#confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
+
+# # Define training control
+# train.control <- trainControl(method = "cv", number = 5, savePredictions = TRUE)
+# # Train the model
+# model_tfidf <- train(class~., data = train_tfidf,
+                trControl = train.control)
+# # Summarize the results
+# print(model_tfidf)
+#
+# DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 5)
+#
+# predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
+#
+# printcp(DT_model_tfidf)
+# plotcp(DT_model_tfidf)
+#
+# prp(DT_model_tfidf) #tree visualization
+#
+# pred_tfidf <- model$pred
+# pred$equal <- ifelse(pred$pred == pred$obs, 1, 0)
+#
+# eachfold <- pred %>%
+#   group_by(Resample) %>%
+#   summarise_at(vars(equal),
+#                list(Accuracy = mean))
+# eachfold
+
+#confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
 ```
 
 
@@ -405,10 +437,39 @@ Apply the Random Forest algorithm to the three models: TF-IDF, Bag-of-Words, and
 
 ```{r}
 RF_model_tfidf <- randomForest(class~., data = train_tfidf)
- 
+
 predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusion matrix 
+
+# Define training control
+train.control <- trainControl(method = "repeatedcv", number = 10, repeats=3, savePredictions = TRUE)
+
+# Train the model
+model_RF_tfidf <- train(train_tfidf[, !names(train_tfidf) %in% c("class")], train_tfidf[, names(train_tfidf) %in% c("class")], method = "cforest", trControl = train.control)
+
+# Summarize the results
+print(model_RF_tfidf)
+
+#Summarize the accuracy scores of each fold
+pred_RF_tfidf <- model_RF_tfidf$pred
+pred_RF_tfidf$equal <- ifelse(pred_RF_tfidf$pred == pred_RF_tfidf$obs, 1, 0)
+
+eachfold_RF_tfidf <- pred_RF_tfidf %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_RF_tfidf
+
+RF_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
+
+predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf, type = "class")
+
+printcp(RF_model_tfidf)
+plotcp(RF_model_tfidf)
+
+prp(RF_model_tfidf) #tree visualization
+
 ```
 
 #### Bag-of-Words
@@ -419,6 +480,31 @@ RF_model_bow <- randomForest(class~., data = train_bow)
 predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictRF_bow)) #evaluation of confusion matrix 
+
+# Train the model
+model_RF_bow <- train(train_bow[, !names(train_bow) %in% c("class")], train_bow[, names(train_bow) %in% c("class")], method = "cforest", trControl = train.control)
+
+# Summarize the results
+print(model_RF_bow)
+
+#Summarize the accuracy scores of each fold
+pred_RF_bow<- model_RF_bow$pred
+pred_RF_bow$equal <- ifelse(pred_RF_bow$pred == pred_RF_bow$obs, 1, 0)
+
+eachfold_RF_bow <- pred_RF_bow %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_RF_bow
+
+RF_model_bow <- rpart(class~., data = train_bow, method = "class", xval = 10)
+
+predictRF_bow<- predict(RF_model_bow, newdata = test_bow, type = "class")
+
+printcp(RF_model_bow)
+plotcp(RF_model_bow)
+
+prp(RF_model_bow) #tree visualization
 ```
 
 #### Unigram
@@ -429,6 +515,31 @@ RF_model_uni <- randomForest(class~., data = train_uni)
 predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictRF_uni)) #evaluation of confusion matrix 
+
+# Train the model
+model_RF_uni <- train(train_uni[, !names(train_uni) %in% c("class")], train_uni[, names(train_uni) %in% c("class")], method = "cforest", trControl = train.control)
+
+# Summarize the results
+print(model_RF_uni)
+
+#Summarize the accuracy scores of each fold
+pred_RF_uni <- model_RF_uni$pred
+pred_RF_uni$equal <- ifelse(pred_RF_uni$pred == pred_RF_uni$obs, 1, 0)
+
+eachfold_RF_uni <- pred_RF_uni %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_RF_uni
+
+RF_model_uni <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
+
+predictRF_uni <- predict(RF_model_uni, newdata = test_uni, type = "class")
+
+printcp(RF_model_uni)
+plotcp(RF_model_uni)
+
+prp(RF_model_uni) #tree visualization
 ```
 ### Naive Bayes
 
@@ -442,6 +553,31 @@ NB_model_tfidf <- naiveBayes(class~., data = train_tfidf)
 predictNB_tfidf <- predict(NB_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusion matrix
+
+# Train the model
+model_NB_tfidf <- train(train_tfidf[, !names(train_tfidf) %in% c("class")], train_tfidf[, names(train_tfidf) %in% c("class")], method="nb", trControl = train.control)
+
+# Summarize the results
+print(model_NB_tfidf)
+
+#Summarize the accuracy scores of each fold
+pred_NB_tfidf <- model_NB_tfidf$pred
+pred_NB_tfidf$equal <- ifelse(pred_NB_tfidf$pred == pred_NB_tfidf$obs, 1, 0)
+
+eachfold_NB_tfidf <- pred_NB_tfidf %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_NB_tfidf
+
+NB_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
+
+predictNB_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf, type = "class")
+
+printcp(NB_model_tfidf)
+plotcp(NB_model_tfidf)
+
+prp(NB_model_tfidf) #tree visualization
 ```
 
 #### Bag-of-Words
@@ -452,6 +588,22 @@ NB_model_bow <- naiveBayes(class~., data = train_bow)
 predictNB_bow <- predict(NB_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion matrix
+
+# Train the model
+model_NB_bow <- train(train_bow[, !names(train_bow) %in% c("class")], train_bow[, names(train_bow) %in% c("class")], method="nb", trControl = train.control)
+
+# Summarize the results
+print(model_NB_bow)
+
+#Summarize the accuracy scores
+pred_NB_bow <- model_NB_bow$pred
+pred_NB_bow$equal <- ifelse(pred_NB_bow$pred == pred_NB_bow$obs, 1, 0)
+
+eachfold_NB_bow <- pred_NB_bow %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_NB_bow
 ```
 
 #### Unigram
@@ -462,5 +614,20 @@ NB_model_uni <- naiveBayes(class~., data = train_uni)
 predictNB_uni <- predict(NB_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictNB_uni)) #evaluation of confusion matrix
-```
 
+# Train the model
+model_NB_uni <- train(train_uni[, !names(train_uni) %in% c("class")], train_uni[, names(train_uni) %in% c("class")], method="nb", trControl = train.control)
+
+# Summarize the results
+print(model_NB_uni)
+
+#Summarize the accuracy scores
+pred_NB_uni <- model_NB_uni$pred
+pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
+
+eachfold_NB_uni <- pred_NB_uni %>% 
+  group_by(Resample) %>%
+  summarise_at(vars(equal), 
+               list(Accuracy = mean))
+eachfold_NB_uni
+```
