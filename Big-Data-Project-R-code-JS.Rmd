@@ -30,6 +30,7 @@ library(randomForest)
 library(caTools)
 library(caret)
 library(e1071)
+library(MASS)
 ```
 
 ## Dataset
@@ -336,16 +337,19 @@ Apply the Decision Tree algorithm to the three models: TF-IDF, Bag-of-Words, and
 m_tfidf <- as.data.frame(tweets_m_tfidf)
 colnames(m_tfidf) <- make.names(colnames(m_tfidf))
 m_tfidf$class = twitter_balanced$airline_sentiment
+``` 
 
+First attempt (no repetition) 
+```{r}
 set.seed(439) #use repeated k-fold validation to repeat then record 20 accuracy scores in a table to proper compare the three classifiers (parametric/non-parametric tests on the mean)
 
 split_tfidf = sample.split(m_tfidf$class, SplitRatio = 0.7)
 train_tfidf = subset(m_tfidf, split_tfidf == TRUE)
 test_tfidf = subset(m_tfidf, split_tfidf == FALSE)
 
-DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
+DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class")
 
-predictDT_tfidf <- xpred.rpart(DT_model_tfidf, xval = 10)
+predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
 
 summary(predictDT_tfidf)
 
@@ -353,37 +357,151 @@ prp(DT_model_tfidf) #tree visualization
 
 printcp(DT_model_tfidf)
 
-#confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
-
-# # Define training control
-# train.control <- trainControl(method = "cv", number = 5, savePredictions = TRUE)
-# # Train the model
-# model_tfidf <- train(class~., data = train_tfidf,
-                trControl = train.control)
-# # Summarize the results
-# print(model_tfidf)
-#
-# DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 5)
-#
-# predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
-#
-# printcp(DT_model_tfidf)
-# plotcp(DT_model_tfidf)
-#
-# prp(DT_model_tfidf) #tree visualization
-#
-# pred_tfidf <- model$pred
-# pred$equal <- ifelse(pred$pred == pred$obs, 1, 0)
-#
-# eachfold <- pred %>%
-#   group_by(Resample) %>%
-#   summarise_at(vars(equal),
-#                list(Accuracy = mean))
-# eachfold
-
-#confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
+confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusion matrix
 ```
 
+Second attempt (10-fold validation)
+```{r}
+set.seed(481)
+folds_1 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_1)
+
+CV_lda_1 <- lapply(1:10, function(x){ 
+  model_1 <- lda(class ~., m_tfidf[folds_1!= x, ])
+  preds_1 <- predict(model_1,  m_tfidf[folds_1 == x, ])$class
+  return(data.frame(preds_1, real = m_tfidf$class[folds_1 == x]))
+})
+
+CV_lda_1 <- do.call(rbind, CV_lda_1)
+
+confusionMatrix(CV_lda_1$preds, CV_lda_1$real)
+
+set.seed(482)
+folds_2 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_2)
+
+CV_lda_2 <- lapply(1:10, function(x){ 
+  model_2 <- lda(class ~., m_tfidf[folds_2 != x, ])
+  preds_2 <- predict(model_2,  m_tfidf[folds_2 == x, ])$class
+  return(data.frame(preds_2, real = m_tfidf$class[folds_2 == x]))
+})
+
+CV_lda_2 <- do.call(rbind, CV_lda_2)
+
+confusionMatrix(CV_lda_2$preds, CV_lda_2$real)
+
+set.seed(483)
+folds_3 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_3)
+
+CV_lda_3 <- lapply(1:10, function(x){ 
+  model_3 <- lda(class ~., m_tfidf[folds_3!= x, ])
+  preds_3 <- predict(model_3,  m_tfidf[folds_3 == x, ])$class
+  return(data.frame(preds_3, real = m_tfidf$class[folds_3 == x]))
+})
+
+CV_lda_3 <- do.call(rbind, CV_lda_3)
+
+confusionMatrix(CV_lda_3$preds, CV_lda_3$real)
+
+set.seed(484)
+folds_4 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_4)
+
+CV_lda_4 <- lapply(1:10, function(x){ 
+  model_4 <- lda(class ~., m_tfidf[folds_4 != x, ])
+  preds_4 <- predict(model_4,  m_tfidf[folds_4 == x, ])$class
+  return(data.frame(preds_4, real = m_tfidf$class[folds_4 == x]))
+})
+
+CV_lda_4 <- do.call(rbind, CV_lda_4)
+
+confusionMatrix(CV_lda_4$preds, CV_lda_4$real)
+
+set.seed(485)
+folds_5 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_5)
+
+CV_lda_5 <- lapply(1:10, function(x){ 
+  model_5 <- lda(class ~., m_tfidf[folds_5!= x, ])
+  preds_5 <- predict(model_5,  m_tfidf[folds_5 == x, ])$class
+  return(data.frame(preds_5, real = m_tfidf$class[folds_5 == x]))
+})
+
+CV_lda_5 <- do.call(rbind, CV_lda_5)
+
+confusionMatrix(CV_lda_5$preds, CV_lda_5$real)
+
+set.seed(486)
+folds_6 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_6)
+
+CV_lda_6 <- lapply(1:10, function(x){ 
+  model_6 <- lda(class ~., m_tfidf[folds_6 != x, ])
+  preds_6 <- predict(model_6,  m_tfidf[folds_6 == x, ])$class
+  return(data.frame(preds_6, real = m_tfidf$class[folds_6 == x]))
+})
+
+CV_lda_6 <- do.call(rbind, CV_lda_6)
+
+confusionMatrix(CV_lda_6$preds, CV_lda_6$real)
+
+set.seed(487)
+folds_7 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_7)
+
+CV_lda_7 <- lapply(1:10, function(x){ 
+  model_7 <- lda(class ~., m_tfidf[folds_7!= x, ])
+  preds_7 <- predict(model_7,  m_tfidf[folds_7 == x, ])$class
+  return(data.frame(preds_7, real = m_tfidf$class[folds_7 == x]))
+})
+
+CV_lda_7 <- do.call(rbind, CV_lda_7)
+
+confusionMatrix(CV_lda_7$preds, CV_lda_7$real)
+
+set.seed(488)
+folds_8 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_8)
+
+CV_lda_8 <- lapply(1:10, function(x){ 
+  model_8 <- lda(class ~., m_tfidf[folds_8 != x, ])
+  preds_8 <- predict(model_8,  m_tfidf[folds_8 == x, ])$class
+  return(data.frame(preds_8, real = m_tfidf$class[folds_8 == x]))
+})
+
+CV_lda_8 <- do.call(rbind, CV_lda_8)
+
+confusionMatrix(CV_lda_8$preds, CV_lda_8$real)
+
+set.seed(489)
+folds_9 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_9)
+
+CV_lda_9 <- lapply(1:10, function(x){ 
+  model_9 <- lda(class ~., m_tfidf[folds_9!= x, ])
+  preds_9 <- predict(model_9,  m_tfidf[folds_9 == x, ])$class
+  return(data.frame(preds_9, real = m_tfidf$class[folds_9 == x]))
+})
+
+CV_lda_9 <- do.call(rbind, CV_lda_9)
+
+confusionMatrix(CV_lda_9$preds, CV_lda_9$real)
+
+set.seed(410)
+folds_10 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+table(folds_10)
+
+CV_lda_10 <- lapply(1:10, function(x){ 
+  model_10 <- lda(class ~., m_tfidf[folds_10 != x, ])
+  preds_10 <- predict(model_10,  m_tfidf[folds_10 == x, ])$class
+  return(data.frame(preds_10, real = m_tfidf$class[folds_10 == x]))
+})
+
+CV_lda_10 <- do.call(rbind, CV_lda_10)
+
+confusionMatrix(CV_lda_10$preds, CV_lda_10$real)
+```
 
 #### Bag-of-Words
 
@@ -391,7 +509,10 @@ printcp(DT_model_tfidf)
 m_bow <- as.data.frame(tweets_m_bow)
 colnames(m_bow) <- make.names(colnames(m_bow))
 m_bow$class = twitter_balanced$airline_sentiment
+```
 
+First attempt (no repetition)
+```{r}
 set.seed(989)
 split_bow = sample.split(m_bow$class, SplitRatio = 0.7)
 train_bow = subset(m_bow, split_bow == TRUE)
@@ -406,13 +527,159 @@ prp(DT_model_bow) #tree visualization
 confusionMatrix(table(test_bow$class, predictDT_bow)) #evaluation of confusion matrix
 ```
 
+Second attempt (k-fold validation)
+```{r}
+set.seed(701)
+folds_bow_1 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_1)
+
+CV_lda_bow_1 <- lapply(1:10, function(x){ 
+  model_bow_1 <- lda(class ~., m_bow[folds_bow_1!= x, ])
+  preds_bow_1 <- predict(model_bow_1,  m_bow[folds_bow_1 == x, ])$class
+  return(data.frame(preds_bow_1, real = m_bow$class[folds_bow_1 == x]))
+})
+
+CV_lda_bow_1 <- do.call(rbind, CV_lda_bow_1)
+
+confusionMatrix(CV_lda_bow_1$preds, CV_lda_bow_1$real)
+
+set.seed(702)
+folds_bow_2 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_2)
+
+CV_lda_bow_2 <- lapply(1:10, function(x){ 
+  model_bow_2 <- lda(class ~., m_bow[folds_bow_2 != x, ])
+  preds_bow_2 <- predict(model_bow_2,  m_bow[folds_bow_2 == x, ])$class
+  return(data.frame(preds_bow_2, real = m_bow$class[folds_bow_2 == x]))
+})
+
+CV_lda_bow_2 <- do.call(rbind, CV_lda_bow_2)
+
+confusionMatrix(CV_lda_bow_2$preds, CV_lda_bow_2$real)
+
+set.seed(703)
+folds_bow_3 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_3)
+
+CV_lda_bow_3 <- lapply(1:10, function(x){ 
+  model_bow_3 <- lda(class ~., m_bow[folds_bow_3!= x, ])
+  preds_bow_3 <- predict(model_bow_3,  m_bow[folds_bow_3 == x, ])$class
+  return(data.frame(preds_bow_3, real = m_bow$class[folds_bow_3 == x]))
+})
+
+CV_lda_bow_3 <- do.call(rbind, CV_lda_bow_3)
+
+confusionMatrix(CV_lda_bow_3$preds, CV_lda_bow_3$real)
+
+set.seed(704)
+folds_bow_4 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_4)
+
+CV_lda_bow_4 <- lapply(1:10, function(x){ 
+  model_bow_4 <- lda(class ~., m_bow[folds_bow_4 != x, ])
+  preds_bow_4 <- predict(model_bow_4,  m_bow[folds_bow_4 == x, ])$class
+  return(data.frame(preds_bow_4, real = m_bow$class[folds_bow_4 == x]))
+})
+
+CV_lda_bow_4 <- do.call(rbind, CV_lda_bow_4)
+
+confusionMatrix(CV_lda_bow_4$preds, CV_lda_bow_4$real)
+
+set.seed(705)
+folds_bow_5 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_5)
+
+CV_lda_bow_5 <- lapply(1:10, function(x){ 
+  model_bow_5 <- lda(class ~., m_bow[folds_bow_5!= x, ])
+  preds_bow_5 <- predict(model_bow_5,  m_bow[folds_bow_5 == x, ])$class
+  return(data.frame(preds_bow_5, real = m_bow$class[folds_bow_5 == x]))
+})
+
+CV_lda_bow_5 <- do.call(rbind, CV_lda_bow_5)
+
+confusionMatrix(CV_lda_bow_5$preds, CV_lda_bow_5$real)
+
+set.seed(706)
+folds_bow_6 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_6)
+
+CV_lda_bow_6 <- lapply(1:10, function(x){ 
+  model_bow_6 <- lda(class ~., m_bow[folds_bow_6 != x, ])
+  preds_bow_6 <- predict(model_bow_6,  m_bow[folds_bow_6 == x, ])$class
+  return(data.frame(preds_bow_6, real = m_bow$class[folds_bow_6 == x]))
+})
+
+CV_lda_bow_6 <- do.call(rbind, CV_lda_bow_6)
+
+confusionMatrix(CV_lda_bow_6$preds, CV_lda_bow_6$real)
+
+set.seed(707)
+folds_bow_7 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_7)
+
+CV_lda_bow_7 <- lapply(1:10, function(x){ 
+  model_bow_7 <- lda(class ~., m_bow[folds_bow_7!= x, ])
+  preds_bow_7 <- predict(model_bow_7,  m_bow[folds_bow_7 == x, ])$class
+  return(data.frame(preds_bow_7, real = m_bow$class[folds_bow_7 == x]))
+})
+
+CV_lda_bow_7 <- do.call(rbind, CV_lda_bow_7)
+
+confusionMatrix(CV_lda_bow_7$preds, CV_lda_bow_7$real)
+
+set.seed(708)
+folds_bow_8 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_8)
+
+CV_lda_bow_8 <- lapply(1:10, function(x){ 
+  model_bow_8 <- lda(class ~., m_bow[folds_bow_8 != x, ])
+  preds_bow_8 <- predict(model_bow_8,  m_bow[folds_bow_8 == x, ])$class
+  return(data.frame(preds_bow_8, real = m_bow$class[folds_bow_8 == x]))
+})
+
+CV_lda_bow_8 <- do.call(rbind, CV_lda_bow_8)
+
+confusionMatrix(CV_lda_bow_8$preds, CV_lda_bow_8$real)
+
+set.seed(709)
+folds_bow_9 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_9)
+
+CV_lda_bow_9 <- lapply(1:10, function(x){ 
+  model_bow_9 <- lda(class ~., m_bow[folds_bow_9!= x, ])
+  preds_bow_9 <- predict(model_bow_9,  m_bow[folds_bow_9 == x, ])$class
+  return(data.frame(preds_bow_9, real = m_bow$class[folds_bow_9 == x]))
+})
+
+CV_lda_bow_9 <- do.call(rbind, CV_lda_bow_9)
+
+confusionMatrix(CV_lda_bow_9$preds, CV_lda_bow_9$real)
+
+set.seed(800)
+folds_bow_10 <- sample(1:10, size = nrow(m_bow), replace = T)
+table(folds_bow_10)
+
+CV_lda_bow_10 <- lapply(1:10, function(x){ 
+  model_bow_10 <- lda(class ~., m_bow[folds_bow_10 != x, ])
+  preds_bow_10 <- predict(model_bow_10,  m_bow[folds_bow_10 == x, ])$class
+  return(data.frame(preds_bow_10, real = m_bow$class[folds_bow_10 == x]))
+})
+
+CV_lda_bow_10 <- do.call(rbind, CV_lda_bow_10)
+
+confusionMatrix(CV_lda_bow_10$preds, CV_lda_bow_10$real)
+```
+
 #### Unigram
 
 ```{r}
 m_uni <- as.data.frame(tweets_m_uni)
 colnames(m_uni) <- make.names(colnames(m_uni))
 m_uni$class = twitter_balanced$airline_sentiment
+```
 
+First attempt (no repetition)
+```{r}
 set.seed(825)
 split_uni = sample.split(m_uni$class, SplitRatio = 0.7)
 train_uni = subset(m_uni, split_uni == TRUE)
@@ -425,6 +692,149 @@ predictDT_uni <- predict(DT_model_uni, newdata = test_uni, type = "class")
 prp(DT_model_uni) #tree visualization
 
 confusionMatrix(table(test_uni$class, predictDT_uni)) #evaluation of confusion matrix
+```
+
+Second attempt (10-fold validation)
+```{r}
+set.seed(321)
+folds_uni_1 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_1)
+
+CV_lda_uni_1 <- lapply(1:10, function(x){ 
+  model_uni_1 <- lda(class ~., m_uni[folds_uni_1!= x, ])
+  preds_uni_1 <- predict(model_uni_1,  m_uni[folds_uni_1 == x, ])$class
+  return(data.frame(preds_uni_1, real = m_uni$class[folds_uni_1 == x]))
+})
+
+CV_lda_uni_1 <- do.call(rbind, CV_lda_uni_1)
+
+confusionMatrix(CV_lda_uni_1$preds, CV_lda_uni_1$real)
+
+set.seed(322)
+folds_uni_2 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_2)
+
+CV_lda_uni_2 <- lapply(1:10, function(x){ 
+  model_uni_2 <- lda(class ~., m_uni[folds_uni_2 != x, ])
+  preds_uni_2 <- predict(model_uni_2,  m_uni[folds_uni_2 == x, ])$class
+  return(data.frame(preds_uni_2, real = m_uni$class[folds_uni_2 == x]))
+})
+
+CV_lda_uni_2 <- do.call(rbind, CV_lda_uni_2)
+
+confusionMatrix(CV_lda_uni_2$preds, CV_lda_uni_2$real)
+
+set.seed(323)
+folds_uni_3 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_3)
+
+CV_lda_uni_3 <- lapply(1:10, function(x){ 
+  model_uni_3 <- lda(class ~., m_uni[folds_uni_3!= x, ])
+  preds_uni_3 <- predict(model_uni_3,  m_uni[folds_uni_3 == x, ])$class
+  return(data.frame(preds_uni_3, real = m_uni$class[folds_uni_3 == x]))
+})
+
+CV_lda_uni_3 <- do.call(rbind, CV_lda_uni_3)
+
+confusionMatrix(CV_lda_uni_3$preds, CV_lda_uni_3$real)
+
+set.seed(324)
+folds_uni_4 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_4)
+
+CV_lda_uni_4 <- lapply(1:10, function(x){ 
+  model_uni_4 <- lda(class ~., m_uni[folds_uni_4 != x, ])
+  preds_uni_4 <- predict(model_uni_4,  m_uni[folds_uni_4 == x, ])$class
+  return(data.frame(preds_uni_4, real = m_uni$class[folds_uni_4 == x]))
+})
+
+CV_lda_uni_4 <- do.call(rbind, CV_lda_uni_4)
+
+confusionMatrix(CV_lda_uni_4$preds, CV_lda_uni_4$real)
+
+set.seed(325)
+folds_uni_5 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_5)
+
+CV_lda_uni_5 <- lapply(1:10, function(x){ 
+  model_uni_5 <- lda(class ~., m_uni[folds_uni_5!= x, ])
+  preds_uni_5 <- predict(model_uni_5,  m_uni[folds_uni_5 == x, ])$class
+  return(data.frame(preds_uni_5, real = m_uni$class[folds_uni_5 == x]))
+})
+
+CV_lda_uni_5 <- do.call(rbind, CV_lda_uni_5)
+
+confusionMatrix(CV_lda_uni_5$preds, CV_lda_uni_5$real)
+
+set.seed(326)
+folds_uni_6 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_6)
+
+CV_lda_uni_6 <- lapply(1:10, function(x){ 
+  model_uni_6 <- lda(class ~., m_uni[folds_uni_6 != x, ])
+  preds_uni_6 <- predict(model_uni_6,  m_uni[folds_uni_6 == x, ])$class
+  return(data.frame(preds_uni_6, real = m_uni$class[folds_uni_6 == x]))
+})
+
+CV_lda_uni_6 <- do.call(rbind, CV_lda_uni_6)
+
+confusionMatrix(CV_lda_uni_6$preds, CV_lda_uni_6$real)
+
+set.seed(327)
+folds_uni_7 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_7)
+
+CV_lda_uni_7 <- lapply(1:10, function(x){ 
+  model_uni_7 <- lda(class ~., m_uni[folds_uni_7!= x, ])
+  preds_uni_7 <- predict(model_uni_7,  m_uni[folds_uni_7 == x, ])$class
+  return(data.frame(preds_uni_7, real = m_uni$class[folds_uni_7 == x]))
+})
+
+CV_lda_uni_7 <- do.call(rbind, CV_lda_uni_7)
+
+confusionMatrix(CV_lda_uni_7$preds, CV_lda_uni_7$real)
+
+set.seed(328)
+folds_uni_8 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_8)
+
+CV_lda_uni_8 <- lapply(1:10, function(x){ 
+  model_uni_8 <- lda(class ~., m_uni[folds_uni_8 != x, ])
+  preds_uni_8 <- predict(model_uni_8,  m_uni[folds_uni_8 == x, ])$class
+  return(data.frame(preds_uni_8, real = m_uni$class[folds_uni_8 == x]))
+})
+
+CV_lda_uni_8 <- do.call(rbind, CV_lda_uni_8)
+
+confusionMatrix(CV_lda_uni_8$preds, CV_lda_uni_8$real)
+
+set.seed(329)
+folds_uni_9 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_9)
+
+CV_lda_uni_9 <- lapply(1:10, function(x){ 
+  model_uni_9 <- lda(class ~., m_uni[folds_uni_9!= x, ])
+  preds_uni_9 <- predict(model_uni_9,  m_uni[folds_uni_9 == x, ])$class
+  return(data.frame(preds_uni_9, real = m_uni$class[folds_uni_9 == x]))
+})
+
+CV_lda_uni_9 <- do.call(rbind, CV_lda_uni_9)
+
+confusionMatrix(CV_lda_uni_9$preds, CV_lda_uni_9$real)
+
+set.seed(400)
+folds_uni_10 <- sample(1:10, size = nrow(m_uni), replace = T)
+table(folds_uni_10)
+
+CV_lda_uni_10 <- lapply(1:10, function(x){ 
+  model_uni_10 <- lda(class ~., m_uni[folds_uni_10 != x, ])
+  preds_uni_10 <- predict(model_uni_10,  m_uni[folds_uni_10 == x, ])$class
+  return(data.frame(preds_uni_10, real = m_uni$class[folds_uni_10 == x]))
+})
+
+CV_lda_uni_10 <- do.call(rbind, CV_lda_uni_10)
+
+confusionMatrix(CV_lda_uni_10$preds, CV_lda_uni_10$real)
 ```
 
 From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word "thank" is the root node followed by "hour" and "great". 
@@ -441,35 +851,6 @@ RF_model_tfidf <- randomForest(class~., data = train_tfidf)
 predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusion matrix 
-
-# Define training control
-train.control <- trainControl(method = "repeatedcv", number = 10, repeats=3, savePredictions = TRUE)
-
-# Train the model
-model_RF_tfidf <- train(train_tfidf[, !names(train_tfidf) %in% c("class")], train_tfidf[, names(train_tfidf) %in% c("class")], method = "cforest", trControl = train.control)
-
-# Summarize the results
-print(model_RF_tfidf)
-
-#Summarize the accuracy scores of each fold
-pred_RF_tfidf <- model_RF_tfidf$pred
-pred_RF_tfidf$equal <- ifelse(pred_RF_tfidf$pred == pred_RF_tfidf$obs, 1, 0)
-
-eachfold_RF_tfidf <- pred_RF_tfidf %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_RF_tfidf
-
-RF_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
-
-predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf, type = "class")
-
-printcp(RF_model_tfidf)
-plotcp(RF_model_tfidf)
-
-prp(RF_model_tfidf) #tree visualization
-
 ```
 
 #### Bag-of-Words
@@ -480,31 +861,6 @@ RF_model_bow <- randomForest(class~., data = train_bow)
 predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictRF_bow)) #evaluation of confusion matrix 
-
-# Train the model
-model_RF_bow <- train(train_bow[, !names(train_bow) %in% c("class")], train_bow[, names(train_bow) %in% c("class")], method = "cforest", trControl = train.control)
-
-# Summarize the results
-print(model_RF_bow)
-
-#Summarize the accuracy scores of each fold
-pred_RF_bow<- model_RF_bow$pred
-pred_RF_bow$equal <- ifelse(pred_RF_bow$pred == pred_RF_bow$obs, 1, 0)
-
-eachfold_RF_bow <- pred_RF_bow %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_RF_bow
-
-RF_model_bow <- rpart(class~., data = train_bow, method = "class", xval = 10)
-
-predictRF_bow<- predict(RF_model_bow, newdata = test_bow, type = "class")
-
-printcp(RF_model_bow)
-plotcp(RF_model_bow)
-
-prp(RF_model_bow) #tree visualization
 ```
 
 #### Unigram
@@ -515,32 +871,8 @@ RF_model_uni <- randomForest(class~., data = train_uni)
 predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictRF_uni)) #evaluation of confusion matrix 
-
-# Train the model
-model_RF_uni <- train(train_uni[, !names(train_uni) %in% c("class")], train_uni[, names(train_uni) %in% c("class")], method = "cforest", trControl = train.control)
-
-# Summarize the results
-print(model_RF_uni)
-
-#Summarize the accuracy scores of each fold
-pred_RF_uni <- model_RF_uni$pred
-pred_RF_uni$equal <- ifelse(pred_RF_uni$pred == pred_RF_uni$obs, 1, 0)
-
-eachfold_RF_uni <- pred_RF_uni %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_RF_uni
-
-RF_model_uni <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
-
-predictRF_uni <- predict(RF_model_uni, newdata = test_uni, type = "class")
-
-printcp(RF_model_uni)
-plotcp(RF_model_uni)
-
-prp(RF_model_uni) #tree visualization
 ```
+
 ### Naive Bayes
 
 Apply the Naive Bayes algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
@@ -553,31 +885,6 @@ NB_model_tfidf <- naiveBayes(class~., data = train_tfidf)
 predictNB_tfidf <- predict(NB_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusion matrix
-
-# Train the model
-model_NB_tfidf <- train(train_tfidf[, !names(train_tfidf) %in% c("class")], train_tfidf[, names(train_tfidf) %in% c("class")], method="nb", trControl = train.control)
-
-# Summarize the results
-print(model_NB_tfidf)
-
-#Summarize the accuracy scores of each fold
-pred_NB_tfidf <- model_NB_tfidf$pred
-pred_NB_tfidf$equal <- ifelse(pred_NB_tfidf$pred == pred_NB_tfidf$obs, 1, 0)
-
-eachfold_NB_tfidf <- pred_NB_tfidf %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_NB_tfidf
-
-NB_model_tfidf <- rpart(class~., data = train_tfidf, method = "class", xval = 10)
-
-predictNB_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf, type = "class")
-
-printcp(NB_model_tfidf)
-plotcp(NB_model_tfidf)
-
-prp(NB_model_tfidf) #tree visualization
 ```
 
 #### Bag-of-Words
@@ -588,22 +895,6 @@ NB_model_bow <- naiveBayes(class~., data = train_bow)
 predictNB_bow <- predict(NB_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion matrix
-
-# Train the model
-model_NB_bow <- train(train_bow[, !names(train_bow) %in% c("class")], train_bow[, names(train_bow) %in% c("class")], method="nb", trControl = train.control)
-
-# Summarize the results
-print(model_NB_bow)
-
-#Summarize the accuracy scores
-pred_NB_bow <- model_NB_bow$pred
-pred_NB_bow$equal <- ifelse(pred_NB_bow$pred == pred_NB_bow$obs, 1, 0)
-
-eachfold_NB_bow <- pred_NB_bow %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_NB_bow
 ```
 
 #### Unigram
@@ -614,20 +905,4 @@ NB_model_uni <- naiveBayes(class~., data = train_uni)
 predictNB_uni <- predict(NB_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictNB_uni)) #evaluation of confusion matrix
-
-# Train the model
-model_NB_uni <- train(train_uni[, !names(train_uni) %in% c("class")], train_uni[, names(train_uni) %in% c("class")], method="nb", trControl = train.control)
-
-# Summarize the results
-print(model_NB_uni)
-
-#Summarize the accuracy scores
-pred_NB_uni <- model_NB_uni$pred
-pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
-
-eachfold_NB_uni <- pred_NB_uni %>% 
-  group_by(Resample) %>%
-  summarise_at(vars(equal), 
-               list(Accuracy = mean))
-eachfold_NB_uni
 ```
