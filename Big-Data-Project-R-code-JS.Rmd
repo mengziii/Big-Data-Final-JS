@@ -31,6 +31,7 @@ library(caTools)
 library(caret)
 library(e1071)
 library(MASS)
+library(klaR)
 ```
 
 ## Dataset
@@ -353,7 +354,7 @@ predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
 
 summary(predictDT_tfidf)
 
-prp(DT_model_tfidf) #tree visualization
+rpart.plot(DT_model_tfidf) #tree visualization
 
 printcp(DT_model_tfidf)
 
@@ -522,7 +523,7 @@ DT_model_bow <- rpart(class~., data = train_bow)
 
 predictDT_bow <- predict(DT_model_bow, newdata = test_bow, type = "class")
 
-prp(DT_model_bow) #tree visualization
+rpart.plot(DT_model_bow) #tree visualization
 
 confusionMatrix(table(test_bow$class, predictDT_bow)) #evaluation of confusion matrix
 ```
@@ -689,7 +690,7 @@ DT_model_uni <- rpart(class~., data = train_uni)
 
 predictDT_uni <- predict(DT_model_uni, newdata = test_uni, type = "class")
 
-prp(DT_model_uni) #tree visualization
+rpart.plot(DT_model_uni, yesno = TRUE) #tree visualization
 
 confusionMatrix(table(test_uni$class, predictDT_uni)) #evaluation of confusion matrix
 ```
@@ -886,15 +887,55 @@ predictNB_tfidf <- predict(NB_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusion matrix
 ```
+```{r, warning=FALSE}
+set.seed(9213)
+model_NB_tfidf <- train(
+  m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "nb", 
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_NB_tfidf
+
+pred_NB_tfidf <- model_NB_tfidf$pred
+pred_NB_tfidf$equal <- ifelse(pred_NB_tfidf$pred == pred_NB_tfidf$obs, 1, 0)
+
+eachfold_NB_tfidf <- pred_NB_tfidf %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_NB_tfidf
+```
 
 #### Bag-of-Words
-
+First attempt (no repetition)
 ```{r}
 NB_model_bow <- naiveBayes(class~., data = train_bow)
 
 predictNB_bow <- predict(NB_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion matrix
+```
+
+Second attempt (10-fold validation)
+```{r, warning=FALSE}
+set.seed(4589)
+model_NB_bow <- train(
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", 
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_NB_bow
+
+pred_NB_bow <- model_NB_bow$pred
+pred_NB_bow$equal <- ifelse(pred_NB_bow$pred == pred_NB_bow$obs, 1, 0)
+
+eachfold_NB_bow <- pred_NB_bow %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_NB_bow
 ```
 
 #### Unigram
@@ -905,4 +946,24 @@ NB_model_uni <- naiveBayes(class~., data = train_uni)
 predictNB_uni <- predict(NB_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictNB_uni)) #evaluation of confusion matrix
+```
+
+```{r, warning=FALSE}
+set.seed(8920)
+model_NB_uni <- train(
+  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", 
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_NB_uni
+
+pred_NB_uni <- model_NB_uni$pred
+pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
+
+eachfold_NB_uni <- pred_NB_uni %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_NB_uni
 ```
