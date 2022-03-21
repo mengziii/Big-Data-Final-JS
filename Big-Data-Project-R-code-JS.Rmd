@@ -32,15 +32,18 @@ library(caret)
 library(e1071)
 library(MASS)
 library(klaR)
+library(party)
 ```
 
 ## Dataset
+
 ```{r}
 twitter_balanced <- read.csv("Twitter US Airline Sentiment.csv", header = T, na.strings = c("","NA"))
 
 table(twitter_balanced$airline_sentiment)
 ```
-Data is imbalanced so sampling will be done so that the subset is balanced. This will be done by undersampling the negative and neutral group. 
+
+Data is imbalanced so sampling will be done so that the subset is balanced. This will be done by undersampling the negative and neutral group.
 
 ```{r}
 twitter_balanced$airline_sentiment <- as.factor(twitter_balanced$airline_sentiment)
@@ -111,6 +114,7 @@ sd(airline_sentiment_confidence); sd(!is.na(negativereason_confidence)); sd(retw
 # Unlist to convert the list output to a vector for easier readability
 unlist(lapply(lapply(twitter_balanced, is.na), sum))
 ```
+
 ```{r warning = FALSE}
 # Check for any outliers in the numerical variables
 
@@ -180,7 +184,7 @@ NR_bar
 
 ## Preprocessing
 
-Before preproccessing, a corpus needs to be created from the "text" variable of the dataset. 
+Before preproccessing, a corpus needs to be created from the "text" variable of the dataset.
 
 ```{r, warning = FALSE}
 tweets_text <- twitter_balanced$text
@@ -194,7 +198,8 @@ tweets_corpus <- Corpus(tweets_source)
 
 tweets_corpus <- tm_map(tweets_corpus, function(x) iconv(enc2utf8(x), sub = "byte"))
 ```
-Preprocessing is a multi-step process where extraneous elements including punctuation, number, and stop words are removed, and clean the data to minimize the words that could create noise to the data and reduce the model down to the most important words.  
+
+Preprocessing is a multi-step process where extraneous elements including punctuation, number, and stop words are removed, and clean the data to minimize the words that could create noise to the data and reduce the model down to the most important words.
 
 ```{r, warning = FALSE}
 tweets_corpus <- tm_map(tweets_corpus, content_transformer(tolower)) # Convert all text to lowercase
@@ -235,16 +240,16 @@ tweets_corpus <- tm_map(tweets_corpus, stemDocument) # Stem the text
 # Display a row of the cleaned corpus
 tweets_corpus[[148]][1]
 ```
-## Feature Selection 
+
+## Feature Selection
 
 #### Document-Term: TF-IDF Weights
 
-Create a document-term matrix with TF-IDF weights then reduce the matrix down so it only contains a certain \% of the terms. 
+Create a document-term matrix with TF-IDF weights then reduce the matrix down so it only contains a certain % of the terms.
 
-Weights are calculated using the following formula:    
+Weights are calculated using the following formula:
 
-$TF-IDF(t)=TF(t) \times IDF(t)$
-\n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
+$TF-IDF(t)=TF(t) \times IDF(t)$ \n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
 
 ```{r, warning = FALSE}
 tweets_dtm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
@@ -267,12 +272,11 @@ dim(tweets_m_tfidf)
 tweets_m_tfidf[14:28, 10:15]
 ```
 
-
 #### Bag of Words
 
-A document-term matrix is created with Bag-of-Words applied. For this model, the corpus is only checked whether the words exist, not where nor the context. 
+A document-term matrix is created with Bag-of-Words applied. For this model, the corpus is only checked whether the words exist, not where nor the context.
 
-The DTM is also reduced to remove extraneous words. 
+The DTM is also reduced to remove extraneous words.
 
 ```{r}
 tweets_dtm_bow <- DocumentTermMatrix(tweets_corpus)
@@ -294,11 +298,12 @@ dim(tweets_m_bow)
 # Display a subset of the matrix after the low frequency terms were removed
 tweets_m_bow[14:28, 10:15]
 ```
+
 #### Unigrams (try bigram + trigram as well)
 
-Unigrams is a one-term version of n-gram model which predicts the occurrence of the words based on the occurrence of its n-1 previous words. 
+Unigrams is a one-term version of n-gram model which predicts the occurrence of the words based on the occurrence of its n-1 previous words.
 
-The DTM is also reduced to remove extraneous words. 
+The DTM is also reduced to remove extraneous words.
 
 ```{r}
 Unigramtokenizer <- function(x) {
@@ -330,7 +335,7 @@ tweets_m_uni[14:28, 10:15]
 
 ### Decision Tree
 
-Apply the Decision Tree algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+Apply the Decision Tree algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram.
 
 #### TF-IDF
 
@@ -338,9 +343,10 @@ Apply the Decision Tree algorithm to the three models: TF-IDF, Bag-of-Words, and
 m_tfidf <- as.data.frame(tweets_m_tfidf)
 colnames(m_tfidf) <- make.names(colnames(m_tfidf))
 m_tfidf$class = twitter_balanced$airline_sentiment
-``` 
+```
 
-First attempt (no repetition) 
+First attempt (no repetition)
+
 ```{r}
 set.seed(439) #use repeated k-fold validation to repeat then record 20 accuracy scores in a table to proper compare the three classifiers (parametric/non-parametric tests on the mean)
 
@@ -354,7 +360,7 @@ predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
 
 summary(predictDT_tfidf)
 
-rpart.plot(DT_model_tfidf) #tree visualization
+prp(DT_model_tfidf) #tree visualization
 
 printcp(DT_model_tfidf)
 
@@ -362,10 +368,10 @@ confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusi
 ```
 
 Second attempt (10-fold validation)
+
 ```{r}
 set.seed(481)
 folds_1 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_1)
 
 CV_lda_1 <- lapply(1:10, function(x){ 
   model_1 <- lda(class ~., m_tfidf[folds_1!= x, ])
@@ -513,6 +519,7 @@ m_bow$class = twitter_balanced$airline_sentiment
 ```
 
 First attempt (no repetition)
+
 ```{r}
 set.seed(989)
 split_bow = sample.split(m_bow$class, SplitRatio = 0.7)
@@ -523,13 +530,14 @@ DT_model_bow <- rpart(class~., data = train_bow)
 
 predictDT_bow <- predict(DT_model_bow, newdata = test_bow, type = "class")
 
-rpart.plot(DT_model_bow) #tree visualization
+prp(DT_model_bow) #tree visualization
 
 confusionMatrix(table(test_bow$class, predictDT_bow)) #evaluation of confusion matrix
 ```
 
 Second attempt (k-fold validation)
-```{r}
+
+```{r, warning = FALSE}
 set.seed(701)
 folds_bow_1 <- sample(1:10, size = nrow(m_bow), replace = T)
 table(folds_bow_1)
@@ -680,6 +688,7 @@ m_uni$class = twitter_balanced$airline_sentiment
 ```
 
 First attempt (no repetition)
+
 ```{r}
 set.seed(825)
 split_uni = sample.split(m_uni$class, SplitRatio = 0.7)
@@ -690,12 +699,13 @@ DT_model_uni <- rpart(class~., data = train_uni)
 
 predictDT_uni <- predict(DT_model_uni, newdata = test_uni, type = "class")
 
-rpart.plot(DT_model_uni, yesno = TRUE) #tree visualization
+prp(DT_model_uni, yesno = TRUE) #tree visualization
 
 confusionMatrix(table(test_uni$class, predictDT_uni)) #evaluation of confusion matrix
 ```
 
 Second attempt (10-fold validation)
+
 ```{r}
 set.seed(321)
 folds_uni_1 <- sample(1:10, size = nrow(m_uni), replace = T)
@@ -838,13 +848,15 @@ CV_lda_uni_10 <- do.call(rbind, CV_lda_uni_10)
 confusionMatrix(CV_lda_uni_10$preds, CV_lda_uni_10$real)
 ```
 
-From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word "thank" is the root node followed by "hour" and "great". 
+From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word "thank" is the root node followed by "hour" and "great".
 
 ### Random Forest
 
-Apply the Random Forest algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+Apply the Random Forest algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram.
 
 #### TF-IDF
+
+First attempt (no repetition)
 
 ```{r}
 RF_model_tfidf <- randomForest(class~., data = train_tfidf)
@@ -854,7 +866,63 @@ predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
 confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusion matrix 
 ```
 
+Second attempt (10-fold)
+
+```{r, warning = FALSE}
+set.seed(1)
+model_RF_tfidf <- train(
+  m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_RF_tfidf
+
+pred_RF_tfidf <- model_RF_tfidf$pred
+pred_RF_tfidf$equal <- ifelse(pred_RF_tfidf$pred == pred_RF_tfidf$obs, 1, 0)
+
+eachfold_RF_tfidf <- pred_RF_tfidf %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_tfidf
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+```
+
+```{r, warning = FALSE}
+set.seed(11)
+model_RF_tfidf_100 <- train(
+  m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 50),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+ 
+model_RF_tfidf_100
+
+pred_RF_tfidf_100 <- model_RF_tfidf_100$pred
+pred_RF_tfidf_100$equal <- ifelse(pred_RF_tfidf_100$pred == pred_RF_tfidf_100$obs, 1, 0)
+ 
+eachfold_RF_tfidf_100 <- pred_RF_tfidf_100 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+ 
+eachfold_RF_tfidf_100
+ 
+#visualize accuracy scores
+ggplot(data=eachfold_RF_tfidf_100, aes(x=Resample, y=Accuracy, group=1)) +
+  geom_boxplot(color="maroon") +
+  geom_point() +
+  theme_minimal()
+```
+
 #### Bag-of-Words
+
+First attempt (no repetition)
 
 ```{r}
 RF_model_bow <- randomForest(class~., data = train_bow)
@@ -862,6 +930,62 @@ RF_model_bow <- randomForest(class~., data = train_bow)
 predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
 
 confusionMatrix(table(test_bow$class, predictRF_bow)) #evaluation of confusion matrix 
+```
+
+Second attempt (10-fold, 10 trees)
+
+```{r, warning = FALSE}
+set.seed(2)
+model_RF_bow <- train(
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_RF_bow
+
+pred_RF_bow <- model_RF_bow$pred
+pred_RF_bow$equal <- ifelse(pred_RF_bow$pred == pred_RF_bow$obs, 1, 0)
+
+eachfold_RF_bow <- pred_RF_bow %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_bow
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bow, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+```
+
+Third attempt (10-fold, 100 trees)
+
+```{r, warning = FALSE}
+set.seed(21)
+model_RF_bow_100 <- train(
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 50),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+ 
+model_RF_bow_100
+
+pred_RF_bow_100 <- model_RF_bow_100$pred
+pred_RF_bow_100$equal <- ifelse(pred_RF_bow_100$pred == pred_RF_bow_100$obs, 1, 0)
+ 
+eachfold_RF_bow_100 <- pred_RF_bow_100 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+ 
+eachfold_RF_bow_100
+ 
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bow_100, aes(x=Resample, y=Accuracy, group=1)) +
+  geom_boxplot(color="maroon") +
+  geom_point() +
+  theme_minimal()
 ```
 
 #### Unigram
@@ -874,11 +998,67 @@ predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
 confusionMatrix(table(test_uni$class, predictRF_uni)) #evaluation of confusion matrix 
 ```
 
+```{r}
+set.seed(3)
+model_NB_uni <- train(
+  m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+
+model_NB_uni
+
+pred_NB_uni <- model_NB_uni$pred
+pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
+
+eachfold_RF_uni <- pred_NB_uni %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_uni
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_uni, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+```
+
+Third attempt (10 fold, 50 trees)
+
+```{r, warning = FALSE}
+set.seed(31)
+model_RF_uni_100 <- train(
+  m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 50),
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
+ 
+model_RF_uni_100
+
+pred_RF_uni_100 <- model_RF_uni_100$pred
+pred_RF_uni_100$equal <- ifelse(pred_RF_uni_100$pred == pred_RF_uni_100$obs, 1, 0)
+ 
+eachfold_RF_uni_100 <- pred_RF_uni_100 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+ 
+eachfold_RF_uni_100
+ 
+#visualize accuracy scores
+ggplot(data=eachfold_RF_uni_100, aes(x=Resample, y=Accuracy, group=1)) +
+  geom_boxplot(color="maroon") +
+  geom_point() +
+  theme_minimal()
+```
+
 ### Naive Bayes
 
-Apply the Naive Bayes algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram. 
+Apply the Naive Bayes algorithm to the three models: TF-IDF, Bag-of-Words, and Unigram.
 
 #### TF-IDF
+
+First attempt (no repetition)
 
 ```{r}
 NB_model_tfidf <- naiveBayes(class~., data = train_tfidf)
@@ -887,6 +1067,9 @@ predictNB_tfidf <- predict(NB_model_tfidf, newdata = test_tfidf)
 
 confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusion matrix
 ```
+
+Second attempt (10-fold)
+
 ```{r, warning=FALSE}
 set.seed(9213)
 model_NB_tfidf <- train(
@@ -896,6 +1079,7 @@ model_NB_tfidf <- train(
 
 model_NB_tfidf
 
+#display individual fold accuracies
 pred_NB_tfidf <- model_NB_tfidf$pred
 pred_NB_tfidf$equal <- ifelse(pred_NB_tfidf$pred == pred_NB_tfidf$obs, 1, 0)
 
@@ -905,10 +1089,18 @@ eachfold_NB_tfidf <- pred_NB_tfidf %>%
                list(Accuracy = mean))
 
 eachfold_NB_tfidf
+
+#visualize accuracy scores
+ggplot(data=eachfold_NB_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
 ```
 
 #### Bag-of-Words
+
 First attempt (no repetition)
+
 ```{r}
 NB_model_bow <- naiveBayes(class~., data = train_bow)
 
@@ -918,6 +1110,7 @@ confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion m
 ```
 
 Second attempt (10-fold validation)
+
 ```{r, warning=FALSE}
 set.seed(4589)
 model_NB_bow <- train(
@@ -927,6 +1120,7 @@ model_NB_bow <- train(
 
 model_NB_bow
 
+#display individual fold accuracies
 pred_NB_bow <- model_NB_bow$pred
 pred_NB_bow$equal <- ifelse(pred_NB_bow$pred == pred_NB_bow$obs, 1, 0)
 
@@ -936,6 +1130,12 @@ eachfold_NB_bow <- pred_NB_bow %>%
                list(Accuracy = mean))
 
 eachfold_NB_bow
+
+#visualize accuracy scores
+ggplot(data=eachfold_NB_bow, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
 ```
 
 #### Unigram
@@ -952,11 +1152,12 @@ confusionMatrix(table(test_uni$class, predictNB_uni)) #evaluation of confusion m
 set.seed(8920)
 model_NB_uni <- train(
   m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", 
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, repeats = 3, savePredictions = TRUE)
 )
 
 model_NB_uni
 
+#display individual fold accuracies
 pred_NB_uni <- model_NB_uni$pred
 pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
 
@@ -966,4 +1167,38 @@ eachfold_NB_uni <- pred_NB_uni %>%
                list(Accuracy = mean))
 
 eachfold_NB_uni
+
+#visualize accuracy scores
+ggplot(data=eachfold_NB_uni, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+```
+
+### (Added tests)
+
+Bigrams, like unigrams, break sentences in individual; however, bigrams split words into pairs unlike unigrams.
+
+```{r}
+Bigramtokenizer <- function(x) {
+        unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
+
+# Unigram dtm
+tweets_dtm_bi <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))
+
+tweets_m_bi <- as.matrix(tweets_dtm_uni)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix
+tweets_m_bi[14:28, 10:15]
+
+# Reduce the matrix by removing the low frequency terms
+tweets_dtm_bi_sparse <- removeSparseTerms(tweets_dtm_uni, 0.99) 
+tweets_dtm_bi_sparse
+
+tweets_m_bi <- as.matrix(tweets_dtm_uni_sparse)
+dim(tweets_m_uni)
+
+# Display a subset of the matrix after the low frequency terms were removed
+tweets_m_bi[14:28, 10:15]
 ```
