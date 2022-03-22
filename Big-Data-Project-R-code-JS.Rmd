@@ -358,8 +358,6 @@ DT_model_tfidf <- rpart(class~., data = train_tfidf, method = "class")
 
 predictDT_tfidf <- predict(DT_model_tfidf, newdata = test_tfidf, type = "class")
 
-summary(predictDT_tfidf)
-
 prp(DT_model_tfidf) #tree visualization
 
 printcp(DT_model_tfidf)
@@ -370,144 +368,29 @@ confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusi
 Second attempt (10-fold validation)
 
 ```{r}
-set.seed(481)
-folds_1 <- sample(1:10, size = nrow(m_tfidf), replace = T)
+set.seed(9)
+model_DT_tfidf <- train(
+  m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "rpart",
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
 
-CV_lda_1 <- lapply(1:10, function(x){ 
-  model_1 <- lda(class ~., m_tfidf[folds_1!= x, ])
-  preds_1 <- predict(model_1,  m_tfidf[folds_1 == x, ])$class
-  return(data.frame(preds_1, real = m_tfidf$class[folds_1 == x]))
-})
+model_DT_tfidf
 
-CV_lda_1 <- do.call(rbind, CV_lda_1)
+pred_DT_tfidf <- model_DT_tfidf$pred
+pred_DT_tfidf$equal <- ifelse(pred_DT_tfidf$pred == pred_DT_tfidf$obs, 1, 0)
 
-confusionMatrix(CV_lda_1$preds, CV_lda_1$real)
+eachfold_DT_tfidf <- pred_DT_tfidf %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-set.seed(482)
-folds_2 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_2)
+eachfold_DT_tfidf
 
-CV_lda_2 <- lapply(1:10, function(x){ 
-  model_2 <- lda(class ~., m_tfidf[folds_2 != x, ])
-  preds_2 <- predict(model_2,  m_tfidf[folds_2 == x, ])$class
-  return(data.frame(preds_2, real = m_tfidf$class[folds_2 == x]))
-})
-
-CV_lda_2 <- do.call(rbind, CV_lda_2)
-
-confusionMatrix(CV_lda_2$preds, CV_lda_2$real)
-
-set.seed(483)
-folds_3 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_3)
-
-CV_lda_3 <- lapply(1:10, function(x){ 
-  model_3 <- lda(class ~., m_tfidf[folds_3!= x, ])
-  preds_3 <- predict(model_3,  m_tfidf[folds_3 == x, ])$class
-  return(data.frame(preds_3, real = m_tfidf$class[folds_3 == x]))
-})
-
-CV_lda_3 <- do.call(rbind, CV_lda_3)
-
-confusionMatrix(CV_lda_3$preds, CV_lda_3$real)
-
-set.seed(484)
-folds_4 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_4)
-
-CV_lda_4 <- lapply(1:10, function(x){ 
-  model_4 <- lda(class ~., m_tfidf[folds_4 != x, ])
-  preds_4 <- predict(model_4,  m_tfidf[folds_4 == x, ])$class
-  return(data.frame(preds_4, real = m_tfidf$class[folds_4 == x]))
-})
-
-CV_lda_4 <- do.call(rbind, CV_lda_4)
-
-confusionMatrix(CV_lda_4$preds, CV_lda_4$real)
-
-set.seed(485)
-folds_5 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_5)
-
-CV_lda_5 <- lapply(1:10, function(x){ 
-  model_5 <- lda(class ~., m_tfidf[folds_5!= x, ])
-  preds_5 <- predict(model_5,  m_tfidf[folds_5 == x, ])$class
-  return(data.frame(preds_5, real = m_tfidf$class[folds_5 == x]))
-})
-
-CV_lda_5 <- do.call(rbind, CV_lda_5)
-
-confusionMatrix(CV_lda_5$preds, CV_lda_5$real)
-
-set.seed(486)
-folds_6 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_6)
-
-CV_lda_6 <- lapply(1:10, function(x){ 
-  model_6 <- lda(class ~., m_tfidf[folds_6 != x, ])
-  preds_6 <- predict(model_6,  m_tfidf[folds_6 == x, ])$class
-  return(data.frame(preds_6, real = m_tfidf$class[folds_6 == x]))
-})
-
-CV_lda_6 <- do.call(rbind, CV_lda_6)
-
-confusionMatrix(CV_lda_6$preds, CV_lda_6$real)
-
-set.seed(487)
-folds_7 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_7)
-
-CV_lda_7 <- lapply(1:10, function(x){ 
-  model_7 <- lda(class ~., m_tfidf[folds_7!= x, ])
-  preds_7 <- predict(model_7,  m_tfidf[folds_7 == x, ])$class
-  return(data.frame(preds_7, real = m_tfidf$class[folds_7 == x]))
-})
-
-CV_lda_7 <- do.call(rbind, CV_lda_7)
-
-confusionMatrix(CV_lda_7$preds, CV_lda_7$real)
-
-set.seed(488)
-folds_8 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_8)
-
-CV_lda_8 <- lapply(1:10, function(x){ 
-  model_8 <- lda(class ~., m_tfidf[folds_8 != x, ])
-  preds_8 <- predict(model_8,  m_tfidf[folds_8 == x, ])$class
-  return(data.frame(preds_8, real = m_tfidf$class[folds_8 == x]))
-})
-
-CV_lda_8 <- do.call(rbind, CV_lda_8)
-
-confusionMatrix(CV_lda_8$preds, CV_lda_8$real)
-
-set.seed(489)
-folds_9 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_9)
-
-CV_lda_9 <- lapply(1:10, function(x){ 
-  model_9 <- lda(class ~., m_tfidf[folds_9!= x, ])
-  preds_9 <- predict(model_9,  m_tfidf[folds_9 == x, ])$class
-  return(data.frame(preds_9, real = m_tfidf$class[folds_9 == x]))
-})
-
-CV_lda_9 <- do.call(rbind, CV_lda_9)
-
-confusionMatrix(CV_lda_9$preds, CV_lda_9$real)
-
-set.seed(410)
-folds_10 <- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_10)
-
-CV_lda_10 <- lapply(1:10, function(x){ 
-  model_10 <- lda(class ~., m_tfidf[folds_10 != x, ])
-  preds_10 <- predict(model_10,  m_tfidf[folds_10 == x, ])$class
-  return(data.frame(preds_10, real = m_tfidf$class[folds_10 == x]))
-})
-
-CV_lda_10 <- do.call(rbind, CV_lda_10)
-
-confusionMatrix(CV_lda_10$preds, CV_lda_10$real)
+#visualize accuracy scores
+ggplot(data=eachfold_DT_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
 ```
 
 #### Bag-of-Words
@@ -538,145 +421,29 @@ confusionMatrix(table(test_bow$class, predictDT_bow)) #evaluation of confusion m
 Second attempt (k-fold validation)
 
 ```{r, warning = FALSE}
-set.seed(701)
-folds_bow_1 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_1)
+set.seed(8)
+model_DT_bow <- train(
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "rpart",
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
 
-CV_lda_bow_1 <- lapply(1:10, function(x){ 
-  model_bow_1 <- lda(class ~., m_bow[folds_bow_1!= x, ])
-  preds_bow_1 <- predict(model_bow_1,  m_bow[folds_bow_1 == x, ])$class
-  return(data.frame(preds_bow_1, real = m_bow$class[folds_bow_1 == x]))
-})
+model_DT_bow
 
-CV_lda_bow_1 <- do.call(rbind, CV_lda_bow_1)
+pred_DT_bow <- model_DT_bow$pred
+pred_DT_bow$equal <- ifelse(pred_DT_bow$pred == pred_DT_bow$obs, 1, 0)
 
-confusionMatrix(CV_lda_bow_1$preds, CV_lda_bow_1$real)
+eachfold_DT_bow <- pred_DT_bow %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-set.seed(702)
-folds_bow_2 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_2)
+eachfold_DT_bow
 
-CV_lda_bow_2 <- lapply(1:10, function(x){ 
-  model_bow_2 <- lda(class ~., m_bow[folds_bow_2 != x, ])
-  preds_bow_2 <- predict(model_bow_2,  m_bow[folds_bow_2 == x, ])$class
-  return(data.frame(preds_bow_2, real = m_bow$class[folds_bow_2 == x]))
-})
-
-CV_lda_bow_2 <- do.call(rbind, CV_lda_bow_2)
-
-confusionMatrix(CV_lda_bow_2$preds, CV_lda_bow_2$real)
-
-set.seed(703)
-folds_bow_3 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_3)
-
-CV_lda_bow_3 <- lapply(1:10, function(x){ 
-  model_bow_3 <- lda(class ~., m_bow[folds_bow_3!= x, ])
-  preds_bow_3 <- predict(model_bow_3,  m_bow[folds_bow_3 == x, ])$class
-  return(data.frame(preds_bow_3, real = m_bow$class[folds_bow_3 == x]))
-})
-
-CV_lda_bow_3 <- do.call(rbind, CV_lda_bow_3)
-
-confusionMatrix(CV_lda_bow_3$preds, CV_lda_bow_3$real)
-
-set.seed(704)
-folds_bow_4 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_4)
-
-CV_lda_bow_4 <- lapply(1:10, function(x){ 
-  model_bow_4 <- lda(class ~., m_bow[folds_bow_4 != x, ])
-  preds_bow_4 <- predict(model_bow_4,  m_bow[folds_bow_4 == x, ])$class
-  return(data.frame(preds_bow_4, real = m_bow$class[folds_bow_4 == x]))
-})
-
-CV_lda_bow_4 <- do.call(rbind, CV_lda_bow_4)
-
-confusionMatrix(CV_lda_bow_4$preds, CV_lda_bow_4$real)
-
-set.seed(705)
-folds_bow_5 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_5)
-
-CV_lda_bow_5 <- lapply(1:10, function(x){ 
-  model_bow_5 <- lda(class ~., m_bow[folds_bow_5!= x, ])
-  preds_bow_5 <- predict(model_bow_5,  m_bow[folds_bow_5 == x, ])$class
-  return(data.frame(preds_bow_5, real = m_bow$class[folds_bow_5 == x]))
-})
-
-CV_lda_bow_5 <- do.call(rbind, CV_lda_bow_5)
-
-confusionMatrix(CV_lda_bow_5$preds, CV_lda_bow_5$real)
-
-set.seed(706)
-folds_bow_6 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_6)
-
-CV_lda_bow_6 <- lapply(1:10, function(x){ 
-  model_bow_6 <- lda(class ~., m_bow[folds_bow_6 != x, ])
-  preds_bow_6 <- predict(model_bow_6,  m_bow[folds_bow_6 == x, ])$class
-  return(data.frame(preds_bow_6, real = m_bow$class[folds_bow_6 == x]))
-})
-
-CV_lda_bow_6 <- do.call(rbind, CV_lda_bow_6)
-
-confusionMatrix(CV_lda_bow_6$preds, CV_lda_bow_6$real)
-
-set.seed(707)
-folds_bow_7 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_7)
-
-CV_lda_bow_7 <- lapply(1:10, function(x){ 
-  model_bow_7 <- lda(class ~., m_bow[folds_bow_7!= x, ])
-  preds_bow_7 <- predict(model_bow_7,  m_bow[folds_bow_7 == x, ])$class
-  return(data.frame(preds_bow_7, real = m_bow$class[folds_bow_7 == x]))
-})
-
-CV_lda_bow_7 <- do.call(rbind, CV_lda_bow_7)
-
-confusionMatrix(CV_lda_bow_7$preds, CV_lda_bow_7$real)
-
-set.seed(708)
-folds_bow_8 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_8)
-
-CV_lda_bow_8 <- lapply(1:10, function(x){ 
-  model_bow_8 <- lda(class ~., m_bow[folds_bow_8 != x, ])
-  preds_bow_8 <- predict(model_bow_8,  m_bow[folds_bow_8 == x, ])$class
-  return(data.frame(preds_bow_8, real = m_bow$class[folds_bow_8 == x]))
-})
-
-CV_lda_bow_8 <- do.call(rbind, CV_lda_bow_8)
-
-confusionMatrix(CV_lda_bow_8$preds, CV_lda_bow_8$real)
-
-set.seed(709)
-folds_bow_9 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_9)
-
-CV_lda_bow_9 <- lapply(1:10, function(x){ 
-  model_bow_9 <- lda(class ~., m_bow[folds_bow_9!= x, ])
-  preds_bow_9 <- predict(model_bow_9,  m_bow[folds_bow_9 == x, ])$class
-  return(data.frame(preds_bow_9, real = m_bow$class[folds_bow_9 == x]))
-})
-
-CV_lda_bow_9 <- do.call(rbind, CV_lda_bow_9)
-
-confusionMatrix(CV_lda_bow_9$preds, CV_lda_bow_9$real)
-
-set.seed(800)
-folds_bow_10 <- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_10)
-
-CV_lda_bow_10 <- lapply(1:10, function(x){ 
-  model_bow_10 <- lda(class ~., m_bow[folds_bow_10 != x, ])
-  preds_bow_10 <- predict(model_bow_10,  m_bow[folds_bow_10 == x, ])$class
-  return(data.frame(preds_bow_10, real = m_bow$class[folds_bow_10 == x]))
-})
-
-CV_lda_bow_10 <- do.call(rbind, CV_lda_bow_10)
-
-confusionMatrix(CV_lda_bow_10$preds, CV_lda_bow_10$real)
+#visualize accuracy scores
+ggplot(data=eachfold_DT_bow, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
 ```
 
 #### Unigram
@@ -707,145 +474,29 @@ confusionMatrix(table(test_uni$class, predictDT_uni)) #evaluation of confusion m
 Second attempt (10-fold validation)
 
 ```{r}
-set.seed(321)
-folds_uni_1 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_1)
+set.seed(7)
+model_DT_uni <- train(
+  m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "rpart",
+  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+)
 
-CV_lda_uni_1 <- lapply(1:10, function(x){ 
-  model_uni_1 <- lda(class ~., m_uni[folds_uni_1!= x, ])
-  preds_uni_1 <- predict(model_uni_1,  m_uni[folds_uni_1 == x, ])$class
-  return(data.frame(preds_uni_1, real = m_uni$class[folds_uni_1 == x]))
-})
+model_DT_uni
 
-CV_lda_uni_1 <- do.call(rbind, CV_lda_uni_1)
+pred_DT_uni <- model_DT_uni$pred
+pred_DT_uni$equal <- ifelse(pred_DT_uni$pred == pred_DT_uni$obs, 1, 0)
 
-confusionMatrix(CV_lda_uni_1$preds, CV_lda_uni_1$real)
+eachfold_DT_uni <- pred_DT_uni %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-set.seed(322)
-folds_uni_2 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_2)
+eachfold_DT_uni
 
-CV_lda_uni_2 <- lapply(1:10, function(x){ 
-  model_uni_2 <- lda(class ~., m_uni[folds_uni_2 != x, ])
-  preds_uni_2 <- predict(model_uni_2,  m_uni[folds_uni_2 == x, ])$class
-  return(data.frame(preds_uni_2, real = m_uni$class[folds_uni_2 == x]))
-})
-
-CV_lda_uni_2 <- do.call(rbind, CV_lda_uni_2)
-
-confusionMatrix(CV_lda_uni_2$preds, CV_lda_uni_2$real)
-
-set.seed(323)
-folds_uni_3 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_3)
-
-CV_lda_uni_3 <- lapply(1:10, function(x){ 
-  model_uni_3 <- lda(class ~., m_uni[folds_uni_3!= x, ])
-  preds_uni_3 <- predict(model_uni_3,  m_uni[folds_uni_3 == x, ])$class
-  return(data.frame(preds_uni_3, real = m_uni$class[folds_uni_3 == x]))
-})
-
-CV_lda_uni_3 <- do.call(rbind, CV_lda_uni_3)
-
-confusionMatrix(CV_lda_uni_3$preds, CV_lda_uni_3$real)
-
-set.seed(324)
-folds_uni_4 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_4)
-
-CV_lda_uni_4 <- lapply(1:10, function(x){ 
-  model_uni_4 <- lda(class ~., m_uni[folds_uni_4 != x, ])
-  preds_uni_4 <- predict(model_uni_4,  m_uni[folds_uni_4 == x, ])$class
-  return(data.frame(preds_uni_4, real = m_uni$class[folds_uni_4 == x]))
-})
-
-CV_lda_uni_4 <- do.call(rbind, CV_lda_uni_4)
-
-confusionMatrix(CV_lda_uni_4$preds, CV_lda_uni_4$real)
-
-set.seed(325)
-folds_uni_5 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_5)
-
-CV_lda_uni_5 <- lapply(1:10, function(x){ 
-  model_uni_5 <- lda(class ~., m_uni[folds_uni_5!= x, ])
-  preds_uni_5 <- predict(model_uni_5,  m_uni[folds_uni_5 == x, ])$class
-  return(data.frame(preds_uni_5, real = m_uni$class[folds_uni_5 == x]))
-})
-
-CV_lda_uni_5 <- do.call(rbind, CV_lda_uni_5)
-
-confusionMatrix(CV_lda_uni_5$preds, CV_lda_uni_5$real)
-
-set.seed(326)
-folds_uni_6 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_6)
-
-CV_lda_uni_6 <- lapply(1:10, function(x){ 
-  model_uni_6 <- lda(class ~., m_uni[folds_uni_6 != x, ])
-  preds_uni_6 <- predict(model_uni_6,  m_uni[folds_uni_6 == x, ])$class
-  return(data.frame(preds_uni_6, real = m_uni$class[folds_uni_6 == x]))
-})
-
-CV_lda_uni_6 <- do.call(rbind, CV_lda_uni_6)
-
-confusionMatrix(CV_lda_uni_6$preds, CV_lda_uni_6$real)
-
-set.seed(327)
-folds_uni_7 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_7)
-
-CV_lda_uni_7 <- lapply(1:10, function(x){ 
-  model_uni_7 <- lda(class ~., m_uni[folds_uni_7!= x, ])
-  preds_uni_7 <- predict(model_uni_7,  m_uni[folds_uni_7 == x, ])$class
-  return(data.frame(preds_uni_7, real = m_uni$class[folds_uni_7 == x]))
-})
-
-CV_lda_uni_7 <- do.call(rbind, CV_lda_uni_7)
-
-confusionMatrix(CV_lda_uni_7$preds, CV_lda_uni_7$real)
-
-set.seed(328)
-folds_uni_8 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_8)
-
-CV_lda_uni_8 <- lapply(1:10, function(x){ 
-  model_uni_8 <- lda(class ~., m_uni[folds_uni_8 != x, ])
-  preds_uni_8 <- predict(model_uni_8,  m_uni[folds_uni_8 == x, ])$class
-  return(data.frame(preds_uni_8, real = m_uni$class[folds_uni_8 == x]))
-})
-
-CV_lda_uni_8 <- do.call(rbind, CV_lda_uni_8)
-
-confusionMatrix(CV_lda_uni_8$preds, CV_lda_uni_8$real)
-
-set.seed(329)
-folds_uni_9 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_9)
-
-CV_lda_uni_9 <- lapply(1:10, function(x){ 
-  model_uni_9 <- lda(class ~., m_uni[folds_uni_9!= x, ])
-  preds_uni_9 <- predict(model_uni_9,  m_uni[folds_uni_9 == x, ])$class
-  return(data.frame(preds_uni_9, real = m_uni$class[folds_uni_9 == x]))
-})
-
-CV_lda_uni_9 <- do.call(rbind, CV_lda_uni_9)
-
-confusionMatrix(CV_lda_uni_9$preds, CV_lda_uni_9$real)
-
-set.seed(400)
-folds_uni_10 <- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_10)
-
-CV_lda_uni_10 <- lapply(1:10, function(x){ 
-  model_uni_10 <- lda(class ~., m_uni[folds_uni_10 != x, ])
-  preds_uni_10 <- predict(model_uni_10,  m_uni[folds_uni_10 == x, ])$class
-  return(data.frame(preds_uni_10, real = m_uni$class[folds_uni_10 == x]))
-})
-
-CV_lda_uni_10 <- do.call(rbind, CV_lda_uni_10)
-
-confusionMatrix(CV_lda_uni_10$preds, CV_lda_uni_10$real)
+#visualize accuracy scores
+ggplot(data=eachfold_DT_uni, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
 ```
 
 From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word "thank" is the root node followed by "hour" and "great".
@@ -1050,7 +701,6 @@ eachfold_RF_uni_50
 #visualize accuracy scores
 ggplot(data=eachfold_RF_uni_50, aes(x=Resample, y=Accuracy, group=1)) +
   geom_boxplot(color="maroon") +
-  geom_point() +
   theme_minimal()
 ```
 
@@ -1181,7 +831,7 @@ theme_minimal()
 
 Bigrams, like unigrams, break sentences in individual; however, bigrams split words into pairs unlike unigrams.
 
-```{r}
+```{r, warning = FALSE}
 Bigramtokenizer <- function(x) {
         unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)}
 

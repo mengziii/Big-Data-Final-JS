@@ -822,453 +822,59 @@ summary(predictDT_tfidf)</code></pre>
 ## Detection Prevalence          0.3395         0.3395          0.3210
 ## Balanced Accuracy             0.6979         0.6434          0.8139</code></pre>
 <p>Second attempt (10-fold validation)</p>
-<pre class="r"><code>set.seed(481)
-folds_1 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
+<pre class="r"><code>set.seed(9)
+model_DT_tfidf &lt;- train(
+  m_tfidf[,!names(m_tfidf) %in% c(&quot;class&quot;)], m_tfidf$class, &quot;rpart&quot;,
+  trControl = trainControl(method = &quot;cv&quot;, number = 10, savePredictions = TRUE)
+)
 
-CV_lda_1 &lt;- lapply(1:10, function(x){ 
-  model_1 &lt;- lda(class ~., m_tfidf[folds_1!= x, ])
-  preds_1 &lt;- predict(model_1,  m_tfidf[folds_1 == x, ])$class
-  return(data.frame(preds_1, real = m_tfidf$class[folds_1 == x]))
-})
+model_DT_tfidf</code></pre>
+<pre><code>## CART 
+## 
+## 7363 samples
+##  138 predictor
+##    3 classes: &#39;negative&#39;, &#39;neutral&#39;, &#39;positive&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 6627, 6626, 6627, 6627, 6627, 6626, ... 
+## Resampling results across tuning parameters:
+## 
+##   cp          Accuracy   Kappa     
+##   0.03050243  0.5182642  0.27469214
+##   0.04009870  0.4790164  0.21513063
+##   0.19206251  0.3994394  0.09279081
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was cp = 0.03050243.</code></pre>
+<pre class="r"><code>pred_DT_tfidf &lt;- model_DT_tfidf$pred
+pred_DT_tfidf$equal &lt;- ifelse(pred_DT_tfidf$pred == pred_DT_tfidf$obs, 1, 0)
 
-CV_lda_1 &lt;- do.call(rbind, CV_lda_1)
+eachfold_DT_tfidf &lt;- pred_DT_tfidf %&gt;%
+  group_by(Resample) %&gt;%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-confusionMatrix(CV_lda_1$preds, CV_lda_1$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1591     449      340
-##   neutral       744    1785      644
-##   positive      165     266     1379
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6458          
-##                  95% CI : (0.6347, 0.6567)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4674          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6364         0.7140          0.5836
-## Specificity                   0.8378         0.7146          0.9138
-## Pos Pred Value                0.6685         0.5626          0.7619
-## Neg Pred Value                0.8176         0.8294          0.8228
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2161         0.2424          0.1873
-## Detection Prevalence          0.3232         0.4309          0.2458
-## Balanced Accuracy             0.7371         0.7143          0.7487</code></pre>
-<pre class="r"><code>set.seed(482)
-folds_2 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_2)</code></pre>
-<pre><code>## folds_2
-##   1   2   3   4   5   6   7   8   9  10 
-## 762 724 750 785 704 722 761 677 719 759</code></pre>
-<pre class="r"><code>CV_lda_2 &lt;- lapply(1:10, function(x){ 
-  model_2 &lt;- lda(class ~., m_tfidf[folds_2 != x, ])
-  preds_2 &lt;- predict(model_2,  m_tfidf[folds_2 == x, ])$class
-  return(data.frame(preds_2, real = m_tfidf$class[folds_2 == x]))
-})
-
-CV_lda_2 &lt;- do.call(rbind, CV_lda_2)
-
-confusionMatrix(CV_lda_2$preds, CV_lda_2$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1595     455      331
-##   neutral       740    1774      649
-##   positive      165     271     1383
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6454          
-##                  95% CI : (0.6343, 0.6563)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4668          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6380         0.7096          0.5853
-## Specificity                   0.8384         0.7144          0.9128
-## Pos Pred Value                0.6699         0.5609          0.7603
-## Neg Pred Value                0.8183         0.8271          0.8232
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2166         0.2409          0.1878
-## Detection Prevalence          0.3234         0.4296          0.2470
-## Balanced Accuracy             0.7382         0.7120          0.7490</code></pre>
-<pre class="r"><code>set.seed(483)
-folds_3 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_3)</code></pre>
-<pre><code>## folds_3
-##   1   2   3   4   5   6   7   8   9  10 
-## 752 790 731 757 691 738 695 720 771 718</code></pre>
-<pre class="r"><code>CV_lda_3 &lt;- lapply(1:10, function(x){ 
-  model_3 &lt;- lda(class ~., m_tfidf[folds_3!= x, ])
-  preds_3 &lt;- predict(model_3,  m_tfidf[folds_3 == x, ])$class
-  return(data.frame(preds_3, real = m_tfidf$class[folds_3 == x]))
-})
-
-CV_lda_3 &lt;- do.call(rbind, CV_lda_3)
-
-confusionMatrix(CV_lda_3$preds, CV_lda_3$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1586     452      333
-##   neutral       750    1780      640
-##   positive      164     268     1390
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6459          
-##                  95% CI : (0.6349, 0.6569)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4676          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6344         0.7120          0.5882
-## Specificity                   0.8386         0.7142          0.9136
-## Pos Pred Value                0.6689         0.5615          0.7629
-## Neg Pred Value                0.8169         0.8283          0.8244
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2154         0.2417          0.1888
-## Detection Prevalence          0.3220         0.4305          0.2475
-## Balanced Accuracy             0.7365         0.7131          0.7509</code></pre>
-<pre class="r"><code>set.seed(484)
-folds_4 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_4)</code></pre>
-<pre><code>## folds_4
-##   1   2   3   4   5   6   7   8   9  10 
-## 739 728 714 760 738 755 705 693 763 768</code></pre>
-<pre class="r"><code>CV_lda_4 &lt;- lapply(1:10, function(x){ 
-  model_4 &lt;- lda(class ~., m_tfidf[folds_4 != x, ])
-  preds_4 &lt;- predict(model_4,  m_tfidf[folds_4 == x, ])$class
-  return(data.frame(preds_4, real = m_tfidf$class[folds_4 == x]))
-})
-
-CV_lda_4 &lt;- do.call(rbind, CV_lda_4)
-
-confusionMatrix(CV_lda_4$preds, CV_lda_4$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1611     455      334
-##   neutral       731    1773      653
-##   positive      158     272     1376
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6465          
-##                  95% CI : (0.6354, 0.6574)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4684          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6444         0.7092          0.5823
-## Specificity                   0.8378         0.7154          0.9140
-## Pos Pred Value                0.6713         0.5616          0.7619
-## Neg Pred Value                0.8209         0.8272          0.8224
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2188         0.2408          0.1869
-## Detection Prevalence          0.3260         0.4288          0.2453
-## Balanced Accuracy             0.7411         0.7123          0.7482</code></pre>
-<pre class="r"><code>set.seed(485)
-folds_5 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_5)</code></pre>
-<pre><code>## folds_5
-##   1   2   3   4   5   6   7   8   9  10 
-## 731 734 747 762 765 745 700 705 734 740</code></pre>
-<pre class="r"><code>CV_lda_5 &lt;- lapply(1:10, function(x){ 
-  model_5 &lt;- lda(class ~., m_tfidf[folds_5!= x, ])
-  preds_5 &lt;- predict(model_5,  m_tfidf[folds_5 == x, ])$class
-  return(data.frame(preds_5, real = m_tfidf$class[folds_5 == x]))
-})
-
-CV_lda_5 &lt;- do.call(rbind, CV_lda_5)
-
-confusionMatrix(CV_lda_5$preds, CV_lda_5$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1603     444      339
-##   neutral       730    1790      645
-##   positive      167     266     1379
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.6481         
-##                  95% CI : (0.6371, 0.659)
-##     No Information Rate : 0.3395         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.4709         
-##                                          
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6412         0.7160          0.5836
-## Specificity                   0.8390         0.7173          0.9134
-## Pos Pred Value                0.6718         0.5656          0.7610
-## Neg Pred Value                0.8198         0.8309          0.8227
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2177         0.2431          0.1873
-## Detection Prevalence          0.3241         0.4299          0.2461
-## Balanced Accuracy             0.7401         0.7166          0.7485</code></pre>
-<pre class="r"><code>set.seed(486)
-folds_6 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_6)</code></pre>
-<pre><code>## folds_6
-##   1   2   3   4   5   6   7   8   9  10 
-## 731 723 733 720 721 755 749 693 800 738</code></pre>
-<pre class="r"><code>CV_lda_6 &lt;- lapply(1:10, function(x){ 
-  model_6 &lt;- lda(class ~., m_tfidf[folds_6 != x, ])
-  preds_6 &lt;- predict(model_6,  m_tfidf[folds_6 == x, ])$class
-  return(data.frame(preds_6, real = m_tfidf$class[folds_6 == x]))
-})
-
-CV_lda_6 &lt;- do.call(rbind, CV_lda_6)
-
-confusionMatrix(CV_lda_6$preds, CV_lda_6$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1603     457      332
-##   neutral       733    1775      646
-##   positive      164     268     1385
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6469          
-##                  95% CI : (0.6358, 0.6578)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.469           
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6412         0.7100          0.5861
-## Specificity                   0.8378         0.7164          0.9136
-## Pos Pred Value                0.6702         0.5628          0.7622
-## Neg Pred Value                0.8196         0.8278          0.8237
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2177         0.2411          0.1881
-## Detection Prevalence          0.3249         0.4284          0.2468
-## Balanced Accuracy             0.7395         0.7132          0.7499</code></pre>
-<pre class="r"><code>set.seed(487)
-folds_7 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_7)</code></pre>
-<pre><code>## folds_7
-##   1   2   3   4   5   6   7   8   9  10 
-## 748 718 760 761 731 724 715 739 746 721</code></pre>
-<pre class="r"><code>CV_lda_7 &lt;- lapply(1:10, function(x){ 
-  model_7 &lt;- lda(class ~., m_tfidf[folds_7!= x, ])
-  preds_7 &lt;- predict(model_7,  m_tfidf[folds_7 == x, ])$class
-  return(data.frame(preds_7, real = m_tfidf$class[folds_7 == x]))
-})
-
-CV_lda_7 &lt;- do.call(rbind, CV_lda_7)
-
-confusionMatrix(CV_lda_7$preds, CV_lda_7$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1604     447      332
-##   neutral       734    1787      647
-##   positive      162     266     1384
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6485          
-##                  95% CI : (0.6375, 0.6594)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4715          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6416         0.7148          0.5857
-## Specificity                   0.8398         0.7160          0.9144
-## Pos Pred Value                0.6731         0.5641          0.7638
-## Neg Pred Value                0.8201         0.8300          0.8236
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2178         0.2427          0.1880
-## Detection Prevalence          0.3236         0.4303          0.2461
-## Balanced Accuracy             0.7407         0.7154          0.7500</code></pre>
-<pre class="r"><code>set.seed(488)
-folds_8 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_8)</code></pre>
-<pre><code>## folds_8
-##   1   2   3   4   5   6   7   8   9  10 
-## 723 741 745 732 709 760 749 746 735 723</code></pre>
-<pre class="r"><code>CV_lda_8 &lt;- lapply(1:10, function(x){ 
-  model_8 &lt;- lda(class ~., m_tfidf[folds_8 != x, ])
-  preds_8 &lt;- predict(model_8,  m_tfidf[folds_8 == x, ])$class
-  return(data.frame(preds_8, real = m_tfidf$class[folds_8 == x]))
-})
-
-CV_lda_8 &lt;- do.call(rbind, CV_lda_8)
-
-confusionMatrix(CV_lda_8$preds, CV_lda_8$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1583     448      339
-##   neutral       752    1776      636
-##   positive      165     276     1388
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6447          
-##                  95% CI : (0.6337, 0.6557)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4658          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6332         0.7104          0.5874
-## Specificity                   0.8382         0.7146          0.9118
-## Pos Pred Value                0.6679         0.5613          0.7589
-## Neg Pred Value                0.8163         0.8276          0.8238
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2150         0.2412          0.1885
-## Detection Prevalence          0.3219         0.4297          0.2484
-## Balanced Accuracy             0.7357         0.7125          0.7496</code></pre>
-<pre class="r"><code>set.seed(489)
-folds_9 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_9)</code></pre>
-<pre><code>## folds_9
-##   1   2   3   4   5   6   7   8   9  10 
-## 762 715 720 728 714 737 728 762 731 766</code></pre>
-<pre class="r"><code>CV_lda_9 &lt;- lapply(1:10, function(x){ 
-  model_9 &lt;- lda(class ~., m_tfidf[folds_9!= x, ])
-  preds_9 &lt;- predict(model_9,  m_tfidf[folds_9 == x, ])$class
-  return(data.frame(preds_9, real = m_tfidf$class[folds_9 == x]))
-})
-
-CV_lda_9 &lt;- do.call(rbind, CV_lda_9)
-
-confusionMatrix(CV_lda_9$preds, CV_lda_9$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1593     454      338
-##   neutral       747    1776      649
-##   positive      160     270     1376
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6444          
-##                  95% CI : (0.6334, 0.6554)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.4653          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6372         0.7104          0.5823
-## Specificity                   0.8371         0.7129          0.9140
-## Pos Pred Value                0.6679         0.5599          0.7619
-## Neg Pred Value                0.8178         0.8272          0.8224
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2164         0.2412          0.1869
-## Detection Prevalence          0.3239         0.4308          0.2453
-## Balanced Accuracy             0.7372         0.7117          0.7482</code></pre>
-<pre class="r"><code>set.seed(410)
-folds_10 &lt;- sample(1:10, size = nrow(m_tfidf), replace = T)
-table(folds_10)</code></pre>
-<pre><code>## folds_10
-##   1   2   3   4   5   6   7   8   9  10 
-## 773 714 785 716 755 755 746 689 733 697</code></pre>
-<pre class="r"><code>CV_lda_10 &lt;- lapply(1:10, function(x){ 
-  model_10 &lt;- lda(class ~., m_tfidf[folds_10 != x, ])
-  preds_10 &lt;- predict(model_10,  m_tfidf[folds_10 == x, ])$class
-  return(data.frame(preds_10, real = m_tfidf$class[folds_10 == x]))
-})
-
-CV_lda_10 &lt;- do.call(rbind, CV_lda_10)
-
-confusionMatrix(CV_lda_10$preds, CV_lda_10$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1607     458      334
-##   neutral       734    1772      655
-##   positive      159     270     1374
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6455          
-##                  95% CI : (0.6345, 0.6565)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.467           
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6428         0.7088          0.5815
-## Specificity                   0.8371         0.7144          0.9142
-## Pos Pred Value                0.6699         0.5606          0.7621
-## Neg Pred Value                0.8201         0.8267          0.8221
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2183         0.2407          0.1866
-## Detection Prevalence          0.3258         0.4293          0.2449
-## Balanced Accuracy             0.7400         0.7116          0.7478</code></pre>
+eachfold_DT_tfidf</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##    Resample Accuracy
+##    &lt;chr&gt;       &lt;dbl&gt;
+##  1 Fold01      0.438
+##  2 Fold02      0.440
+##  3 Fold03      0.441
+##  4 Fold04      0.475
+##  5 Fold05      0.495
+##  6 Fold06      0.460
+##  7 Fold07      0.482
+##  8 Fold08      0.464
+##  9 Fold09      0.481
+## 10 Fold10      0.481</code></pre>
+<pre class="r"><code>#visualize accuracy scores
+ggplot(data=eachfold_DT_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color=&quot;maroon&quot;) +
+geom_point() +
+theme_minimal()</code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 </div>
 <div id="bag-of-words-1" class="section level4">
 <h4>Bag-of-Words</h4>
@@ -1319,456 +925,59 @@ prp(DT_model_bow) #tree visualization</code></pre>
 ## Detection Prevalence          0.3395         0.3395          0.3210
 ## Balanced Accuracy             0.7104         0.6389          0.7896</code></pre>
 <p>Second attempt (k-fold validation)</p>
-<pre class="r"><code>set.seed(701)
-folds_bow_1 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_1)</code></pre>
-<pre><code>## folds_bow_1
-##   1   2   3   4   5   6   7   8   9  10 
-## 725 729 775 709 741 698 743 738 768 737</code></pre>
-<pre class="r"><code>CV_lda_bow_1 &lt;- lapply(1:10, function(x){ 
-  model_bow_1 &lt;- lda(class ~., m_bow[folds_bow_1!= x, ])
-  preds_bow_1 &lt;- predict(model_bow_1,  m_bow[folds_bow_1 == x, ])$class
-  return(data.frame(preds_bow_1, real = m_bow$class[folds_bow_1 == x]))
-})
+<pre class="r"><code>set.seed(8)
+model_DT_bow &lt;- train(
+  m_bow[,!names(m_bow) %in% c(&quot;class&quot;)], m_bow$class, &quot;rpart&quot;,
+  trControl = trainControl(method = &quot;cv&quot;, number = 10, savePredictions = TRUE)
+)
 
-CV_lda_bow_1 &lt;- do.call(rbind, CV_lda_bow_1)
+model_DT_bow</code></pre>
+<pre><code>## CART 
+## 
+## 7363 samples
+##  138 predictor
+##    3 classes: &#39;negative&#39;, &#39;neutral&#39;, &#39;positive&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 6627, 6627, 6626, 6627, 6626, 6627, ... 
+## Resampling results across tuning parameters:
+## 
+##   cp          Accuracy   Kappa    
+##   0.03057098  0.5246626  0.2844107
+##   0.04009870  0.4818755  0.2194440
+##   0.19206251  0.4109566  0.1104813
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was cp = 0.03057098.</code></pre>
+<pre class="r"><code>pred_DT_bow &lt;- model_DT_bow$pred
+pred_DT_bow$equal &lt;- ifelse(pred_DT_bow$pred == pred_DT_bow$obs, 1, 0)
 
-confusionMatrix(CV_lda_bow_1$preds, CV_lda_bow_1$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1577     370      222
-##   neutral       753    1852      587
-##   positive      170     278     1554
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6768          
-##                  95% CI : (0.6659, 0.6874)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5143          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6308         0.7408          0.6576
-## Specificity                   0.8783         0.7244          0.9104
-## Pos Pred Value                0.7271         0.5802          0.7762
-## Neg Pred Value                0.8223         0.8446          0.8491
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2142         0.2515          0.2111
-## Detection Prevalence          0.2946         0.4335          0.2719
-## Balanced Accuracy             0.7545         0.7326          0.7840</code></pre>
-<pre class="r"><code>set.seed(702)
-folds_bow_2 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_2)</code></pre>
-<pre><code>## folds_bow_2
-##   1   2   3   4   5   6   7   8   9  10 
-## 772 706 746 714 740 710 765 757 734 719</code></pre>
-<pre class="r"><code>CV_lda_bow_2 &lt;- lapply(1:10, function(x){ 
-  model_bow_2 &lt;- lda(class ~., m_bow[folds_bow_2 != x, ])
-  preds_bow_2 &lt;- predict(model_bow_2,  m_bow[folds_bow_2 == x, ])$class
-  return(data.frame(preds_bow_2, real = m_bow$class[folds_bow_2 == x]))
-})
+eachfold_DT_bow &lt;- pred_DT_bow %&gt;%
+  group_by(Resample) %&gt;%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-CV_lda_bow_2 &lt;- do.call(rbind, CV_lda_bow_2)
-
-confusionMatrix(CV_lda_bow_2$preds, CV_lda_bow_2$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1568     373      228
-##   neutral       759    1846      569
-##   positive      173     281     1566
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.6764         
-##                  95% CI : (0.6655, 0.687)
-##     No Information Rate : 0.3395         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.5137         
-##                                          
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6272         0.7384          0.6627
-## Specificity                   0.8764         0.7269          0.9092
-## Pos Pred Value                0.7229         0.5816          0.7752
-## Neg Pred Value                0.8206         0.8439          0.8508
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2130         0.2507          0.2127
-## Detection Prevalence          0.2946         0.4311          0.2743
-## Balanced Accuracy             0.7518         0.7327          0.7860</code></pre>
-<pre class="r"><code>set.seed(703)
-folds_bow_3 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_3)</code></pre>
-<pre><code>## folds_bow_3
-##   1   2   3   4   5   6   7   8   9  10 
-## 735 719 765 706 751 727 741 754 732 733</code></pre>
-<pre class="r"><code>CV_lda_bow_3 &lt;- lapply(1:10, function(x){ 
-  model_bow_3 &lt;- lda(class ~., m_bow[folds_bow_3!= x, ])
-  preds_bow_3 &lt;- predict(model_bow_3,  m_bow[folds_bow_3 == x, ])$class
-  return(data.frame(preds_bow_3, real = m_bow$class[folds_bow_3 == x]))
-})
-
-CV_lda_bow_3 &lt;- do.call(rbind, CV_lda_bow_3)
-
-confusionMatrix(CV_lda_bow_3$preds, CV_lda_bow_3$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1576     362      228
-##   neutral       754    1855      572
-##   positive      170     283     1563
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6783          
-##                  95% CI : (0.6674, 0.6889)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5166          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6304         0.7420          0.6614
-## Specificity                   0.8787         0.7273          0.9094
-## Pos Pred Value                0.7276         0.5831          0.7753
-## Neg Pred Value                0.8222         0.8458          0.8504
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2140         0.2519          0.2123
-## Detection Prevalence          0.2942         0.4320          0.2738
-## Balanced Accuracy             0.7545         0.7347          0.7854</code></pre>
-<pre class="r"><code>set.seed(704)
-folds_bow_4 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_4)</code></pre>
-<pre><code>## folds_bow_4
-##   1   2   3   4   5   6   7   8   9  10 
-## 743 734 748 734 702 760 740 690 784 728</code></pre>
-<pre class="r"><code>CV_lda_bow_4 &lt;- lapply(1:10, function(x){ 
-  model_bow_4 &lt;- lda(class ~., m_bow[folds_bow_4 != x, ])
-  preds_bow_4 &lt;- predict(model_bow_4,  m_bow[folds_bow_4 == x, ])$class
-  return(data.frame(preds_bow_4, real = m_bow$class[folds_bow_4 == x]))
-})
-
-CV_lda_bow_4 &lt;- do.call(rbind, CV_lda_bow_4)
-
-confusionMatrix(CV_lda_bow_4$preds, CV_lda_bow_4$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1567     364      225
-##   neutral       760    1853      585
-##   positive      173     283     1553
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6754          
-##                  95% CI : (0.6646, 0.6861)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5123          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6268         0.7412          0.6572
-## Specificity                   0.8789         0.7234          0.9088
-## Pos Pred Value                0.7268         0.5794          0.7730
-## Neg Pred Value                0.8208         0.8447          0.8487
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2128         0.2517          0.2109
-## Detection Prevalence          0.2928         0.4343          0.2729
-## Balanced Accuracy             0.7528         0.7323          0.7830</code></pre>
-<pre class="r"><code>set.seed(705)
-folds_bow_5 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_5)</code></pre>
-<pre><code>## folds_bow_5
-##   1   2   3   4   5   6   7   8   9  10 
-## 748 747 775 746 756 691 737 720 743 700</code></pre>
-<pre class="r"><code>CV_lda_bow_5 &lt;- lapply(1:10, function(x){ 
-  model_bow_5 &lt;- lda(class ~., m_bow[folds_bow_5!= x, ])
-  preds_bow_5 &lt;- predict(model_bow_5,  m_bow[folds_bow_5 == x, ])$class
-  return(data.frame(preds_bow_5, real = m_bow$class[folds_bow_5 == x]))
-})
-
-CV_lda_bow_5 &lt;- do.call(rbind, CV_lda_bow_5)
-
-confusionMatrix(CV_lda_bow_5$preds, CV_lda_bow_5$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1582     368      227
-##   neutral       753    1853      579
-##   positive      165     279     1557
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.678           
-##                  95% CI : (0.6672, 0.6887)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5161          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6328         0.7412          0.6589
-## Specificity                   0.8776         0.7261          0.9112
-## Pos Pred Value                0.7267         0.5818          0.7781
-## Neg Pred Value                0.8230         0.8451          0.8497
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2149         0.2517          0.2115
-## Detection Prevalence          0.2957         0.4326          0.2718
-## Balanced Accuracy             0.7552         0.7336          0.7851</code></pre>
-<pre class="r"><code>set.seed(706)
-folds_bow_6 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_6)</code></pre>
-<pre><code>## folds_bow_6
-##   1   2   3   4   5   6   7   8   9  10 
-## 752 754 741 746 748 708 691 748 767 708</code></pre>
-<pre class="r"><code>CV_lda_bow_6 &lt;- lapply(1:10, function(x){ 
-  model_bow_6 &lt;- lda(class ~., m_bow[folds_bow_6 != x, ])
-  preds_bow_6 &lt;- predict(model_bow_6,  m_bow[folds_bow_6 == x, ])$class
-  return(data.frame(preds_bow_6, real = m_bow$class[folds_bow_6 == x]))
-})
-
-CV_lda_bow_6 &lt;- do.call(rbind, CV_lda_bow_6)
-
-confusionMatrix(CV_lda_bow_6$preds, CV_lda_bow_6$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1569     372      221
-##   neutral       763    1847      584
-##   positive      168     281     1558
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6755          
-##                  95% CI : (0.6647, 0.6862)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5125          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6276         0.7388          0.6593
-## Specificity                   0.8781         0.7230          0.9102
-## Pos Pred Value                0.7257         0.5783          0.7763
-## Neg Pred Value                0.8210         0.8434          0.8497
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2131         0.2508          0.2116
-## Detection Prevalence          0.2936         0.4338          0.2726
-## Balanced Accuracy             0.7528         0.7309          0.7848</code></pre>
-<pre class="r"><code>set.seed(707)
-folds_bow_7 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_7)</code></pre>
-<pre><code>## folds_bow_7
-##   1   2   3   4   5   6   7   8   9  10 
-## 745 722 785 735 704 744 774 733 717 704</code></pre>
-<pre class="r"><code>CV_lda_bow_7 &lt;- lapply(1:10, function(x){ 
-  model_bow_7 &lt;- lda(class ~., m_bow[folds_bow_7!= x, ])
-  preds_bow_7 &lt;- predict(model_bow_7,  m_bow[folds_bow_7 == x, ])$class
-  return(data.frame(preds_bow_7, real = m_bow$class[folds_bow_7 == x]))
-})
-
-CV_lda_bow_7 &lt;- do.call(rbind, CV_lda_bow_7)
-
-confusionMatrix(CV_lda_bow_7$preds, CV_lda_bow_7$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1574     364      230
-##   neutral       762    1858      581
-##   positive      164     278     1552
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6769          
-##                  95% CI : (0.6661, 0.6876)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5145          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6296         0.7432          0.6568
-## Specificity                   0.8779         0.7238          0.9116
-## Pos Pred Value                0.7260         0.5804          0.7783
-## Neg Pred Value                0.8218         0.8457          0.8489
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2138         0.2523          0.2108
-## Detection Prevalence          0.2944         0.4347          0.2708
-## Balanced Accuracy             0.7537         0.7335          0.7842</code></pre>
-<pre class="r"><code>set.seed(708)
-folds_bow_8 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_8)</code></pre>
-<pre><code>## folds_bow_8
-##   1   2   3   4   5   6   7   8   9  10 
-## 729 744 750 712 740 732 758 745 739 714</code></pre>
-<pre class="r"><code>CV_lda_bow_8 &lt;- lapply(1:10, function(x){ 
-  model_bow_8 &lt;- lda(class ~., m_bow[folds_bow_8 != x, ])
-  preds_bow_8 &lt;- predict(model_bow_8,  m_bow[folds_bow_8 == x, ])$class
-  return(data.frame(preds_bow_8, real = m_bow$class[folds_bow_8 == x]))
-})
-
-CV_lda_bow_8 &lt;- do.call(rbind, CV_lda_bow_8)
-
-confusionMatrix(CV_lda_bow_8$preds, CV_lda_bow_8$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1574     373      215
-##   neutral       758    1844      586
-##   positive      168     283     1562
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.6764         
-##                  95% CI : (0.6655, 0.687)
-##     No Information Rate : 0.3395         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.5137         
-##                                          
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6296         0.7376          0.6610
-## Specificity                   0.8791         0.7236          0.9098
-## Pos Pred Value                0.7280         0.5784          0.7760
-## Neg Pred Value                0.8220         0.8429          0.8503
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2138         0.2504          0.2121
-## Detection Prevalence          0.2936         0.4330          0.2734
-## Balanced Accuracy             0.7543         0.7306          0.7854</code></pre>
-<pre class="r"><code>set.seed(709)
-folds_bow_9 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_9)</code></pre>
-<pre><code>## folds_bow_9
-##   1   2   3   4   5   6   7   8   9  10 
-## 761 759 697 713 712 690 764 774 755 738</code></pre>
-<pre class="r"><code>CV_lda_bow_9 &lt;- lapply(1:10, function(x){ 
-  model_bow_9 &lt;- lda(class ~., m_bow[folds_bow_9!= x, ])
-  preds_bow_9 &lt;- predict(model_bow_9,  m_bow[folds_bow_9 == x, ])$class
-  return(data.frame(preds_bow_9, real = m_bow$class[folds_bow_9 == x]))
-})
-
-CV_lda_bow_9 &lt;- do.call(rbind, CV_lda_bow_9)
-
-confusionMatrix(CV_lda_bow_9$preds, CV_lda_bow_9$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1574     358      216
-##   neutral       756    1860      581
-##   positive      170     282     1566
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6791          
-##                  95% CI : (0.6683, 0.6897)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5178          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6296         0.7440          0.6627
-## Specificity                   0.8820         0.7251          0.9096
-## Pos Pred Value                0.7328         0.5818          0.7760
-## Neg Pred Value                0.8224         0.8464          0.8509
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2138         0.2526          0.2127
-## Detection Prevalence          0.2917         0.4342          0.2741
-## Balanced Accuracy             0.7558         0.7345          0.7862</code></pre>
-<pre class="r"><code>set.seed(800)
-folds_bow_10 &lt;- sample(1:10, size = nrow(m_bow), replace = T)
-table(folds_bow_10)</code></pre>
-<pre><code>## folds_bow_10
-##   1   2   3   4   5   6   7   8   9  10 
-## 713 721 761 737 729 690 730 769 745 768</code></pre>
-<pre class="r"><code>CV_lda_bow_10 &lt;- lapply(1:10, function(x){ 
-  model_bow_10 &lt;- lda(class ~., m_bow[folds_bow_10 != x, ])
-  preds_bow_10 &lt;- predict(model_bow_10,  m_bow[folds_bow_10 == x, ])$class
-  return(data.frame(preds_bow_10, real = m_bow$class[folds_bow_10 == x]))
-})
-
-CV_lda_bow_10 &lt;- do.call(rbind, CV_lda_bow_10)
-
-confusionMatrix(CV_lda_bow_10$preds, CV_lda_bow_10$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1577     357      225
-##   neutral       758    1864      578
-##   positive      165     279     1560
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6792          
-##                  95% CI : (0.6684, 0.6899)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.518           
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6308         0.7456          0.6602
-## Specificity                   0.8803         0.7253          0.9112
-## Pos Pred Value                0.7304         0.5825          0.7784
-## Neg Pred Value                0.8226         0.8472          0.8502
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2142         0.2532          0.2119
-## Detection Prevalence          0.2932         0.4346          0.2722
-## Balanced Accuracy             0.7556         0.7354          0.7857</code></pre>
+eachfold_DT_bow</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##    Resample Accuracy
+##    &lt;chr&gt;       &lt;dbl&gt;
+##  1 Fold01      0.468
+##  2 Fold02      0.469
+##  3 Fold03      0.493
+##  4 Fold04      0.477
+##  5 Fold05      0.459
+##  6 Fold06      0.493
+##  7 Fold07      0.497
+##  8 Fold08      0.440
+##  9 Fold09      0.461
+## 10 Fold10      0.467</code></pre>
+<pre class="r"><code>#visualize accuracy scores
+ggplot(data=eachfold_DT_bow, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color=&quot;maroon&quot;) +
+geom_point() +
+theme_minimal()</code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 </div>
 <div id="unigram" class="section level4">
 <h4>Unigram</h4>
@@ -1819,456 +1028,59 @@ prp(DT_model_uni, yesno = TRUE) #tree visualization</code></pre>
 ## Detection Prevalence          0.3395         0.3395          0.3210
 ## Balanced Accuracy             0.7108         0.6434          0.7873</code></pre>
 <p>Second attempt (10-fold validation)</p>
-<pre class="r"><code>set.seed(321)
-folds_uni_1 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_1)</code></pre>
-<pre><code>## folds_uni_1
-##   1   2   3   4   5   6   7   8   9  10 
-## 773 738 741 725 698 787 710 729 727 735</code></pre>
-<pre class="r"><code>CV_lda_uni_1 &lt;- lapply(1:10, function(x){ 
-  model_uni_1 &lt;- lda(class ~., m_uni[folds_uni_1!= x, ])
-  preds_uni_1 &lt;- predict(model_uni_1,  m_uni[folds_uni_1 == x, ])$class
-  return(data.frame(preds_uni_1, real = m_uni$class[folds_uni_1 == x]))
-})
+<pre class="r"><code>set.seed(7)
+model_DT_uni &lt;- train(
+  m_uni[,!names(m_uni) %in% c(&quot;class&quot;)], m_uni$class, &quot;rpart&quot;,
+  trControl = trainControl(method = &quot;cv&quot;, number = 10, savePredictions = TRUE)
+)
 
-CV_lda_uni_1 &lt;- do.call(rbind, CV_lda_uni_1)
+model_DT_uni</code></pre>
+<pre><code>## CART 
+## 
+## 7363 samples
+##  138 predictor
+##    3 classes: &#39;negative&#39;, &#39;neutral&#39;, &#39;positive&#39; 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 6626, 6626, 6627, 6627, 6627, 6627, ... 
+## Resampling results across tuning parameters:
+## 
+##   cp          Accuracy   Kappa     
+##   0.03057098  0.5160957  0.27140576
+##   0.04009870  0.4761657  0.21083605
+##   0.19206251  0.3858504  0.07171603
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was cp = 0.03057098.</code></pre>
+<pre class="r"><code>pred_DT_uni &lt;- model_DT_uni$pred
+pred_DT_uni$equal &lt;- ifelse(pred_DT_uni$pred == pred_DT_uni$obs, 1, 0)
 
-confusionMatrix(CV_lda_uni_1$preds, CV_lda_uni_1$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1584     358      225
-##   neutral       748    1859      581
-##   positive      168     283     1557
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6791          
-##                  95% CI : (0.6683, 0.6897)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5178          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6336         0.7436          0.6589
-## Specificity                   0.8801         0.7267          0.9098
-## Pos Pred Value                0.7310         0.5831          0.7754
-## Neg Pred Value                0.8237         0.8465          0.8495
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2151         0.2525          0.2115
-## Detection Prevalence          0.2943         0.4330          0.2727
-## Balanced Accuracy             0.7569         0.7352          0.7844</code></pre>
-<pre class="r"><code>set.seed(322)
-folds_uni_2 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_2)</code></pre>
-<pre><code>## folds_uni_2
-##   1   2   3   4   5   6   7   8   9  10 
-## 795 723 710 723 710 762 694 788 740 718</code></pre>
-<pre class="r"><code>CV_lda_uni_2 &lt;- lapply(1:10, function(x){ 
-  model_uni_2 &lt;- lda(class ~., m_uni[folds_uni_2 != x, ])
-  preds_uni_2 &lt;- predict(model_uni_2,  m_uni[folds_uni_2 == x, ])$class
-  return(data.frame(preds_uni_2, real = m_uni$class[folds_uni_2 == x]))
-})
+eachfold_DT_uni &lt;- pred_DT_uni %&gt;%
+  group_by(Resample) %&gt;%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
 
-CV_lda_uni_2 &lt;- do.call(rbind, CV_lda_uni_2)
-
-confusionMatrix(CV_lda_uni_2$preds, CV_lda_uni_2$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1566     364      218
-##   neutral       761    1859      581
-##   positive      173     277     1564
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6776          
-##                  95% CI : (0.6668, 0.6882)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5156          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6264         0.7436          0.6619
-## Specificity                   0.8803         0.7240          0.9100
-## Pos Pred Value                0.7291         0.5808          0.7766
-## Neg Pred Value                0.8209         0.8460          0.8506
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2127         0.2525          0.2124
-## Detection Prevalence          0.2917         0.4347          0.2735
-## Balanced Accuracy             0.7534         0.7338          0.7859</code></pre>
-<pre class="r"><code>set.seed(323)
-folds_uni_3 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_3)</code></pre>
-<pre><code>## folds_uni_3
-##   1   2   3   4   5   6   7   8   9  10 
-## 754 750 736 704 702 706 816 733 742 720</code></pre>
-<pre class="r"><code>CV_lda_uni_3 &lt;- lapply(1:10, function(x){ 
-  model_uni_3 &lt;- lda(class ~., m_uni[folds_uni_3!= x, ])
-  preds_uni_3 &lt;- predict(model_uni_3,  m_uni[folds_uni_3 == x, ])$class
-  return(data.frame(preds_uni_3, real = m_uni$class[folds_uni_3 == x]))
-})
-
-CV_lda_uni_3 &lt;- do.call(rbind, CV_lda_uni_3)
-
-confusionMatrix(CV_lda_uni_3$preds, CV_lda_uni_3$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1582     359      219
-##   neutral       750    1858      583
-##   positive      168     283     1561
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6792          
-##                  95% CI : (0.6684, 0.6899)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.518           
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6328         0.7432          0.6606
-## Specificity                   0.8811         0.7259          0.9098
-## Pos Pred Value                0.7324         0.5823          0.7758
-## Neg Pred Value                0.8236         0.8461          0.8501
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2149         0.2523          0.2120
-## Detection Prevalence          0.2934         0.4334          0.2733
-## Balanced Accuracy             0.7570         0.7345          0.7852</code></pre>
-<pre class="r"><code>set.seed(324)
-folds_uni_4 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_4)</code></pre>
-<pre><code>## folds_uni_4
-##   1   2   3   4   5   6   7   8   9  10 
-## 744 722 737 766 690 781 748 693 737 745</code></pre>
-<pre class="r"><code>CV_lda_uni_4 &lt;- lapply(1:10, function(x){ 
-  model_uni_4 &lt;- lda(class ~., m_uni[folds_uni_4 != x, ])
-  preds_uni_4 &lt;- predict(model_uni_4,  m_uni[folds_uni_4 == x, ])$class
-  return(data.frame(preds_uni_4, real = m_uni$class[folds_uni_4 == x]))
-})
-
-CV_lda_uni_4 &lt;- do.call(rbind, CV_lda_uni_4)
-
-confusionMatrix(CV_lda_uni_4$preds, CV_lda_uni_4$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1572     366      223
-##   neutral       761    1854      582
-##   positive      167     280     1558
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6769          
-##                  95% CI : (0.6661, 0.6876)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5145          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6288         0.7416          0.6593
-## Specificity                   0.8789         0.7238          0.9106
-## Pos Pred Value                0.7274         0.5799          0.7771
-## Neg Pred Value                0.8216         0.8449          0.8498
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2135         0.2518          0.2116
-## Detection Prevalence          0.2935         0.4342          0.2723
-## Balanced Accuracy             0.7538         0.7327          0.7850</code></pre>
-<pre class="r"><code>set.seed(325)
-folds_uni_5 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_5)</code></pre>
-<pre><code>## folds_uni_5
-##   1   2   3   4   5   6   7   8   9  10 
-## 758 690 740 755 717 717 743 792 737 714</code></pre>
-<pre class="r"><code>CV_lda_uni_5 &lt;- lapply(1:10, function(x){ 
-  model_uni_5 &lt;- lda(class ~., m_uni[folds_uni_5!= x, ])
-  preds_uni_5 &lt;- predict(model_uni_5,  m_uni[folds_uni_5 == x, ])$class
-  return(data.frame(preds_uni_5, real = m_uni$class[folds_uni_5 == x]))
-})
-
-CV_lda_uni_5 &lt;- do.call(rbind, CV_lda_uni_5)
-
-confusionMatrix(CV_lda_uni_5$preds, CV_lda_uni_5$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1572     362      229
-##   neutral       751    1859      575
-##   positive      177     279     1559
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6777          
-##                  95% CI : (0.6669, 0.6884)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5158          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6288         0.7436          0.6598
-## Specificity                   0.8785         0.7273          0.9088
-## Pos Pred Value                0.7268         0.5837          0.7737
-## Neg Pred Value                0.8215         0.8466          0.8497
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2135         0.2525          0.2117
-## Detection Prevalence          0.2938         0.4326          0.2737
-## Balanced Accuracy             0.7536         0.7355          0.7843</code></pre>
-<pre class="r"><code>set.seed(326)
-folds_uni_6 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_6)</code></pre>
-<pre><code>## folds_uni_6
-##   1   2   3   4   5   6   7   8   9  10 
-## 755 711 748 742 780 695 755 745 696 736</code></pre>
-<pre class="r"><code>CV_lda_uni_6 &lt;- lapply(1:10, function(x){ 
-  model_uni_6 &lt;- lda(class ~., m_uni[folds_uni_6 != x, ])
-  preds_uni_6 &lt;- predict(model_uni_6,  m_uni[folds_uni_6 == x, ])$class
-  return(data.frame(preds_uni_6, real = m_uni$class[folds_uni_6 == x]))
-})
-
-CV_lda_uni_6 &lt;- do.call(rbind, CV_lda_uni_6)
-
-confusionMatrix(CV_lda_uni_6$preds, CV_lda_uni_6$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1571     374      226
-##   neutral       762    1848      582
-##   positive      167     278     1555
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6755          
-##                  95% CI : (0.6647, 0.6862)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5125          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6284         0.7392          0.6581
-## Specificity                   0.8766         0.7236          0.9110
-## Pos Pred Value                0.7236         0.5789          0.7775
-## Neg Pred Value                0.8211         0.8437          0.8493
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2134         0.2510          0.2112
-## Detection Prevalence          0.2949         0.4335          0.2716
-## Balanced Accuracy             0.7525         0.7314          0.7845</code></pre>
-<pre class="r"><code>set.seed(327)
-folds_uni_7 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_7)</code></pre>
-<pre><code>## folds_uni_7
-##   1   2   3   4   5   6   7   8   9  10 
-## 729 726 736 690 749 752 772 719 752 738</code></pre>
-<pre class="r"><code>CV_lda_uni_7 &lt;- lapply(1:10, function(x){ 
-  model_uni_7 &lt;- lda(class ~., m_uni[folds_uni_7!= x, ])
-  preds_uni_7 &lt;- predict(model_uni_7,  m_uni[folds_uni_7 == x, ])$class
-  return(data.frame(preds_uni_7, real = m_uni$class[folds_uni_7 == x]))
-})
-
-CV_lda_uni_7 &lt;- do.call(rbind, CV_lda_uni_7)
-
-confusionMatrix(CV_lda_uni_7$preds, CV_lda_uni_7$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1577     370      222
-##   neutral       754    1850      585
-##   positive      169     280     1556
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6768          
-##                  95% CI : (0.6659, 0.6874)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5143          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6308         0.7400          0.6585
-## Specificity                   0.8783         0.7247          0.9102
-## Pos Pred Value                0.7271         0.5801          0.7761
-## Neg Pred Value                0.8223         0.8443          0.8494
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2142         0.2513          0.2113
-## Detection Prevalence          0.2946         0.4331          0.2723
-## Balanced Accuracy             0.7545         0.7323          0.7843</code></pre>
-<pre class="r"><code>set.seed(328)
-folds_uni_8 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_8)</code></pre>
-<pre><code>## folds_uni_8
-##   1   2   3   4   5   6   7   8   9  10 
-## 793 701 753 776 754 707 673 726 716 764</code></pre>
-<pre class="r"><code>CV_lda_uni_8 &lt;- lapply(1:10, function(x){ 
-  model_uni_8 &lt;- lda(class ~., m_uni[folds_uni_8 != x, ])
-  preds_uni_8 &lt;- predict(model_uni_8,  m_uni[folds_uni_8 == x, ])$class
-  return(data.frame(preds_uni_8, real = m_uni$class[folds_uni_8 == x]))
-})
-
-CV_lda_uni_8 &lt;- do.call(rbind, CV_lda_uni_8)
-
-confusionMatrix(CV_lda_uni_8$preds, CV_lda_uni_8$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1575     372      223
-##   neutral       752    1841      580
-##   positive      173     287     1560
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.6758         
-##                  95% CI : (0.665, 0.6865)
-##     No Information Rate : 0.3395         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.5129         
-##                                          
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6300         0.7364          0.6602
-## Specificity                   0.8776         0.7261          0.9080
-## Pos Pred Value                0.7258         0.5802          0.7723
-## Neg Pred Value                0.8219         0.8427          0.8497
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2139         0.2500          0.2119
-## Detection Prevalence          0.2947         0.4309          0.2743
-## Balanced Accuracy             0.7538         0.7312          0.7841</code></pre>
-<pre class="r"><code>set.seed(329)
-folds_uni_9 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_9)</code></pre>
-<pre><code>## folds_uni_9
-##   1   2   3   4   5   6   7   8   9  10 
-## 748 768 715 742 733 737 749 733 718 720</code></pre>
-<pre class="r"><code>CV_lda_uni_9 &lt;- lapply(1:10, function(x){ 
-  model_uni_9 &lt;- lda(class ~., m_uni[folds_uni_9!= x, ])
-  preds_uni_9 &lt;- predict(model_uni_9,  m_uni[folds_uni_9 == x, ])$class
-  return(data.frame(preds_uni_9, real = m_uni$class[folds_uni_9 == x]))
-})
-
-CV_lda_uni_9 &lt;- do.call(rbind, CV_lda_uni_9)
-
-confusionMatrix(CV_lda_uni_9$preds, CV_lda_uni_9$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1580     365      224
-##   neutral       750    1851      583
-##   positive      170     284     1556
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.6773         
-##                  95% CI : (0.6665, 0.688)
-##     No Information Rate : 0.3395         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.5151         
-##                                          
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16      
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6320         0.7404          0.6585
-## Specificity                   0.8789         0.7259          0.9092
-## Pos Pred Value                0.7284         0.5813          0.7741
-## Neg Pred Value                0.8229         0.8447          0.8492
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2146         0.2514          0.2113
-## Detection Prevalence          0.2946         0.4324          0.2730
-## Balanced Accuracy             0.7554         0.7331          0.7838</code></pre>
-<pre class="r"><code>set.seed(400)
-folds_uni_10 &lt;- sample(1:10, size = nrow(m_uni), replace = T)
-table(folds_uni_10)</code></pre>
-<pre><code>## folds_uni_10
-##   1   2   3   4   5   6   7   8   9  10 
-## 689 702 756 762 714 692 751 787 756 754</code></pre>
-<pre class="r"><code>CV_lda_uni_10 &lt;- lapply(1:10, function(x){ 
-  model_uni_10 &lt;- lda(class ~., m_uni[folds_uni_10 != x, ])
-  preds_uni_10 &lt;- predict(model_uni_10,  m_uni[folds_uni_10 == x, ])$class
-  return(data.frame(preds_uni_10, real = m_uni$class[folds_uni_10 == x]))
-})
-
-CV_lda_uni_10 &lt;- do.call(rbind, CV_lda_uni_10)
-
-confusionMatrix(CV_lda_uni_10$preds, CV_lda_uni_10$real)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction negative neutral positive
-##   negative     1574     365      221
-##   neutral       754    1857      589
-##   positive      172     278     1553
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.6769          
-##                  95% CI : (0.6661, 0.6876)
-##     No Information Rate : 0.3395          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5145          
-##                                           
-##  Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6296         0.7428          0.6572
-## Specificity                   0.8795         0.7238          0.9100
-## Pos Pred Value                0.7287         0.5803          0.7753
-## Neg Pred Value                0.8220         0.8455          0.8489
-## Prevalence                    0.3395         0.3395          0.3209
-## Detection Rate                0.2138         0.2522          0.2109
-## Detection Prevalence          0.2934         0.4346          0.2720
-## Balanced Accuracy             0.7545         0.7333          0.7836</code></pre>
+eachfold_DT_uni</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##    Resample Accuracy
+##    &lt;chr&gt;       &lt;dbl&gt;
+##  1 Fold01      0.488
+##  2 Fold02      0.441
+##  3 Fold03      0.459
+##  4 Fold04      0.460
+##  5 Fold05      0.444
+##  6 Fold06      0.457
+##  7 Fold07      0.472
+##  8 Fold08      0.437
+##  9 Fold09      0.439
+## 10 Fold10      0.496</code></pre>
+<pre class="r"><code>#visualize accuracy scores
+ggplot(data=eachfold_DT_uni, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color=&quot;maroon&quot;) +
+geom_point() +
+theme_minimal()</code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 <p>From the decision tree, the TF-IDF model resulted in the highest accuracy at 59.35%; however, this is very close to the other models (Bag-of-Words, Unigrams). For all three algorithm-model combination, the word “thank” is the root node followed by “hour” and “great”.</p>
 </div>
 </div>
@@ -2287,32 +1099,32 @@ confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusi
 ## 
 ##           predictRF_tfidf
 ##            negative neutral positive
-##   negative      560     135       55
-##   neutral       171     479      100
-##   positive       95     124      490
+##   negative      553     141       56
+##   neutral       182     465      103
+##   positive       90     129      490
 ## 
 ## Overall Statistics
-##                                           
-##                Accuracy : 0.6922          
-##                  95% CI : (0.6724, 0.7114)
-##     No Information Rate : 0.3739          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.5377          
-##                                           
-##  Mcnemar&#39;s Test P-Value : 0.0005647       
+##                                          
+##                Accuracy : 0.6827         
+##                  95% CI : (0.6628, 0.702)
+##     No Information Rate : 0.3735         
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
+##                                          
+##                   Kappa : 0.5235         
+##                                          
+##  Mcnemar&#39;s Test P-Value : 0.001115       
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: negative Class: neutral Class: positive
-## Sensitivity                   0.6780         0.6491          0.7597
-## Specificity                   0.8626         0.8158          0.8600
-## Pos Pred Value                0.7467         0.6387          0.6911
-## Neg Pred Value                0.8177         0.8225          0.8967
-## Prevalence                    0.3739         0.3341          0.2920
-## Detection Rate                0.2535         0.2168          0.2218
+## Sensitivity                   0.6703         0.6327          0.7550
+## Specificity                   0.8577         0.8066          0.8596
+## Pos Pred Value                0.7373         0.6200          0.6911
+## Neg Pred Value                0.8136         0.8149          0.8940
+## Prevalence                    0.3735         0.3327          0.2938
+## Detection Rate                0.2503         0.2105          0.2218
 ## Detection Prevalence          0.3395         0.3395          0.3210
-## Balanced Accuracy             0.7703         0.7324          0.8098</code></pre>
+## Balanced Accuracy             0.7640         0.7197          0.8073</code></pre>
 <p>Second attempt (10-fold)</p>
 <pre class="r"><code>set.seed(1)
 model_RF_tfidf &lt;- train(
@@ -3015,12 +1827,9 @@ theme_minimal()</code></pre>
         unlist(lapply(ngrams(words(x), 2), paste, collapse = &quot; &quot;), use.names = FALSE)}
 
 # Unigram dtm
-tweets_dtm_bi &lt;- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))</code></pre>
-<pre><code>## Warning in TermDocumentMatrix.SimpleCorpus(x, control): custom functions are
-## ignored</code></pre>
-<pre><code>## Warning in TermDocumentMatrix.SimpleCorpus(x, control): custom tokenizer is
-## ignored</code></pre>
-<pre class="r"><code>tweets_m_bi &lt;- as.matrix(tweets_dtm_uni)
+tweets_dtm_bi &lt;- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))
+
+tweets_m_bi &lt;- as.matrix(tweets_dtm_uni)
 dim(tweets_m_uni)</code></pre>
 <pre><code>## [1] 7363  138</code></pre>
 <pre class="r"><code># Display a subset of the matrix
