@@ -894,27 +894,29 @@ geom_point() +
 theme_minimal()
 ```
 
+Third attempt (10 fold, 50 trees)
+
 ```{r, warning = FALSE}
 set.seed(11)
-model_RF_tfidf_100 <- train(
+model_RF_tfidf_50 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 50),
   trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
 )
  
-model_RF_tfidf_100
+model_RF_tfidf_50
 
-pred_RF_tfidf_100 <- model_RF_tfidf_100$pred
-pred_RF_tfidf_100$equal <- ifelse(pred_RF_tfidf_100$pred == pred_RF_tfidf_100$obs, 1, 0)
+pred_RF_tfidf_50 <- model_RF_tfidf_50$pred
+pred_RF_tfidf_50$equal <- ifelse(pred_RF_tfidf_50$pred == pred_RF_tfidf_50$obs, 1, 0)
  
-eachfold_RF_tfidf_100 <- pred_RF_tfidf_100 %>%
+eachfold_RF_tfidf_50 <- pred_RF_tfidf_50 %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
  
-eachfold_RF_tfidf_100
+eachfold_RF_tfidf_50
  
 #visualize accuracy scores
-ggplot(data=eachfold_RF_tfidf_100, aes(x=Resample, y=Accuracy, group=1)) +
+ggplot(data=eachfold_RF_tfidf_50, aes(x=Resample, y=Accuracy, group=1)) +
   geom_boxplot(color="maroon") +
   geom_point() +
   theme_minimal()
@@ -960,29 +962,29 @@ geom_point() +
 theme_minimal()
 ```
 
-Third attempt (10-fold, 100 trees)
+Third attempt (10-fold, 50 trees)
 
 ```{r, warning = FALSE}
 set.seed(21)
-model_RF_bow_100 <- train(
+model_RF_bow_50 <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 50),
   trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
 )
  
-model_RF_bow_100
+model_RF_bow_50
 
-pred_RF_bow_100 <- model_RF_bow_100$pred
-pred_RF_bow_100$equal <- ifelse(pred_RF_bow_100$pred == pred_RF_bow_100$obs, 1, 0)
+pred_RF_bow_50 <- model_RF_bow_50$pred
+pred_RF_bow_50$equal <- ifelse(pred_RF_bow_50$pred == pred_RF_bow_50$obs, 1, 0)
  
-eachfold_RF_bow_100 <- pred_RF_bow_100 %>%
+eachfold_RF_bow_50 <- pred_RF_bow_50 %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
  
-eachfold_RF_bow_100
+eachfold_RF_bow_50
  
 #visualize accuracy scores
-ggplot(data=eachfold_RF_bow_100, aes(x=Resample, y=Accuracy, group=1)) +
+ggplot(data=eachfold_RF_bow_50, aes(x=Resample, y=Accuracy, group=1)) +
   geom_boxplot(color="maroon") +
   geom_point() +
   theme_minimal()
@@ -1028,25 +1030,25 @@ Third attempt (10 fold, 50 trees)
 
 ```{r, warning = FALSE}
 set.seed(31)
-model_RF_uni_100 <- train(
+model_RF_uni_50 <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 50),
   trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
 )
  
-model_RF_uni_100
+model_RF_uni_50
 
-pred_RF_uni_100 <- model_RF_uni_100$pred
-pred_RF_uni_100$equal <- ifelse(pred_RF_uni_100$pred == pred_RF_uni_100$obs, 1, 0)
+pred_RF_uni_50 <- model_RF_uni_50$pred
+pred_RF_uni_50$equal <- ifelse(pred_RF_uni_50$pred == pred_RF_uni_50$obs, 1, 0)
  
-eachfold_RF_uni_100 <- pred_RF_uni_100 %>%
+eachfold_RF_uni_50 <- pred_RF_uni_50 %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
  
-eachfold_RF_uni_100
+eachfold_RF_uni_50
  
 #visualize accuracy scores
-ggplot(data=eachfold_RF_uni_100, aes(x=Resample, y=Accuracy, group=1)) +
+ggplot(data=eachfold_RF_uni_50, aes(x=Resample, y=Accuracy, group=1)) +
   geom_boxplot(color="maroon") +
   geom_point() +
   theme_minimal()
