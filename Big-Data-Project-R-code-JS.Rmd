@@ -249,7 +249,9 @@ Create a document-term matrix with TF-IDF weights then reduce the matrix down so
 
 Weights are calculated using the following formula:
 
-$TF-IDF(t)=TF(t) \times IDF(t)$ \n $w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
+$TF-IDF(t)=TF(t) \times IDF(t)$
+
+$w_{i,j} = tf_{i,j} \times log\frac{N}{df_i}$
 
 ```{r, warning = FALSE}
 tweets_dtm_tfidf <- DocumentTermMatrix(tweets_corpus, control = list(weighting = weightTfIdf))
@@ -346,9 +348,9 @@ dim(tweets_m_uni)
 tweets_m_uni[14:28, 10:15]
 ```
 
-```{r}
-words_uni <- sort(rowSums(tweets_m_uni), decreasing = TRUE)
-word_df_uni <- data.frame(word = names(words_tfidf), freq = words_tfidf)
+```{r, warning = FALSE}
+words_uni <- sort(colSums(tweets_m_uni), decreasing = TRUE)
+word_df_uni <- data.frame(word = names(words_uni), freq = words_uni)
 
 wordcloud(words = word_df_uni$word, freq = word_df_uni$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
 ```
@@ -410,7 +412,7 @@ eachfold_DT_tfidf_5
 
 Third attempt (10-fold validation)
 
-```{r}
+```{r, warning = FALSE}
 set.seed(902)
 model_DT_tfidf <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "rpart",
@@ -628,6 +630,34 @@ predictRF_tfidf <- predict(RF_model_tfidf, newdata = test_tfidf)
 confusionMatrix(table(test_tfidf$class, predictRF_tfidf)) #evaluation of confusion matrix 
 ```
 
+Second attempt (5-fold, 10 trees)
+
+```{r}
+set.seed(12)
+model_RF_tfidf_5 <- train(
+  m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+)
+
+model_RF_tfidf_5
+
+pred_RF_tfidf_5 <- model_RF_tfidf_5$pred
+pred_RF_tfidf_5$equal <- ifelse(pred_RF_tfidf_5$pred == pred_RF_tfidf_5$obs, 1, 0)
+
+eachfold_RF_tfidf_5 <- pred_RF_tfidf_5 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_tfidf_5
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_tfidf_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
+```
+
 Second attempt (10-fold, 10 trees)
 
 ```{r, warning = FALSE}
@@ -696,6 +726,34 @@ predictRF_bow <- predict(RF_model_bow, newdata = test_bow)
 confusionMatrix(table(test_bow$class, predictRF_bow)) #evaluation of confusion matrix 
 ```
 
+Second attempt (5-fold, 10 trees)
+
+```{r}
+set.seed(22)
+model_RF_bow_5 <- train(
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+)
+
+model_RF_bow_5
+
+pred_RF_bow_5 <- model_RF_bow_5$pred
+pred_RF_bow_5$equal <- ifelse(pred_RF_bow_5$pred == pred_RF_bow_5$obs, 1, 0)
+
+eachfold_RF_bow_5 <- pred_RF_bow_5 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_bow_5
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bow_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
+```
+
 Second attempt (10-fold, 10 trees)
 
 ```{r, warning = FALSE}
@@ -762,6 +820,34 @@ RF_model_uni <- randomForest(class~., data = train_uni)
 predictRF_uni <- predict(RF_model_uni, newdata = test_uni)
 
 confusionMatrix(table(test_uni$class, predictRF_uni)) #evaluation of confusion matrix 
+```
+
+Second attempt (5-fold, 10 trees)
+
+```{r}
+set.seed(32)
+model_NB_uni_5 <- train(
+  m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 10),
+  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+)
+
+model_NB_uni_5
+
+pred_NB_uni_5 <- model_NB_uni_5$pred
+pred_NB_uni_5$equal <- ifelse(pred_NB_uni_5$pred == pred_NB_uni_5$obs, 1, 0)
+
+eachfold_RF_uni_5 <- pred_NB_uni_5 %>%
+  group_by(Resample) %>%
+  summarise_at(vars(equal),
+               list(Accuracy = mean))
+
+eachfold_RF_uni_5
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_uni_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
 ```
 
 Second attempt (10-fold, 10 trees)
@@ -838,7 +924,7 @@ confusionMatrix(table(test_tfidf$class, predictNB_tfidf)) #evaluation of confusi
 Second attempt (5-fold)
 
 ```{r, warning=FALSE}
-set.seed(92131)
+set.seed(92138)
 model_NB_tfidf_5 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "nb", 
   trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
@@ -910,10 +996,9 @@ confusionMatrix(table(test_bow$class, predictNB_bow)) #evaluation of confusion m
 Second attempt (5-fold validation)
 
 ```{r, warning = FALSE}
-set.seed(45891)
+set.seed(45894)
 model_NB_bow_5 <- train(
-  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", 
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
 )
 
 model_NB_bow_5
@@ -984,15 +1069,14 @@ Second attempt (5-fold validation)
 ```{r, warning=FALSE}
 set.seed(8920)
 model_NB_uni_5 <- train(
-  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", 
-  trControl = trainControl(method = "cv", number = 5, repeats = 3, savePredictions = TRUE)
+  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
 )
 
 model_NB_uni_5
 
 #display individual fold accuracies
 pred_NB_uni_5 <- model_NB_uni_5$pred
-pred_NB_uni_5$equal <- ifelse(pred_NB_uni_5$pred == pred_NB_uni$obs, 1, 0)
+pred_NB_uni_5$equal <- ifelse(pred_NB_uni_5$pred == pred_NB_uni_5$obs, 1, 0)
 
 eachfold_NB_uni_5 <- pred_NB_uni_5 %>%
   group_by(Resample) %>%
@@ -1007,8 +1091,7 @@ Third attempt (10-fold validation)
 ```{r, warning=FALSE}
 set.seed(8920)
 model_NB_uni <- train(
-  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", 
-  trControl = trainControl(method = "cv", number = 10, repeats = 3, savePredictions = TRUE)
+  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
 )
 
 model_NB_uni
