@@ -278,7 +278,7 @@ tweets_m_tfidf[14:28, 10:15]
 words_tfidf <- sort(colSums(tweets_m_tfidf), decreasing = TRUE)
 word_df_tfidf <- data.frame(word = names(words_tfidf), freq = words_tfidf)
 
-wordcloud(words = word_df_tfidf$word, freq = word_df_tfidf$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
+wordcloud(words = word_df_tfidf$word, freq = word_df_tfidf$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
 ```
 
 #### Bag of Words
@@ -352,7 +352,7 @@ tweets_m_uni[14:28, 10:15]
 words_uni <- sort(colSums(tweets_m_uni), decreasing = TRUE)
 word_df_uni <- data.frame(word = names(words_uni), freq = words_uni)
 
-wordcloud(words = word_df_uni$word, freq = word_df_uni$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
+wordcloud(words = word_df_uni$word, freq = word_df_uni$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Set1"))
 ```
 
 ## Classifier
@@ -390,7 +390,7 @@ confusionMatrix(table(test_tfidf$class, predictDT_tfidf)) #evaluation of confusi
 
 Second attempt (5-fold validation)
 
-```{r}
+```{r, warning = FALSE}
 set.seed(901)
 model_DT_tfidf_5 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "rpart",
@@ -1122,7 +1122,30 @@ geom_point() +
 theme_minimal()
 ```
 
-### (Added tests)
+### Mean testing of fold accuracy scores
+
+```{r, warning = FALSE}
+acc_5_fold <- c(eachfold_DT_tfidf_5$Accuracy, eachfold_DT_bow_5$Accuracy, eachfold_DT_uni_5$Accuracy, eachfold_RF_tfidf_5$Accuracy, eachfold_RF_bow_5$Accuracy, eachfold_RF_uni_5$Accuracy,
+eachfold_NB_tfidf_5$Accuracy, eachfold_NB_bow_5$Accuracy, eachfold_NB_uni_5$Accuracy)
+
+acc_5_fold_df <- data.frame("Group" = factor(rep(c("DT TFIDF", "DT BOW", "DT Uni", "RF TFIDF", "RF BOW", "RF Uni", "NB TFIDF", "NB BOW", "NB Uni"), each = 5)), "Accuracy" = acc_5_fold)
+
+shapiro.test(acc_5_fold_df$Accuracy)
+
+kruskal.test(Accuracy ~ Group, data = acc_5_fold_df)
+```
+
+```{r, warning = FALSE}
+acc_10_fold <- c(eachfold_DT_tfidf$Accuracy, eachfold_DT_bow$Accuracy, eachfold_DT_uni$Accuracy, eachfold_RF_tfidf$Accuracy, eachfold_RF_bow$Accuracy, eachfold_RF_uni$Accuracy, eachfold_NB_tfidf$Accuracy, eachfold_NB_bow$Accuracy, eachfold_NB_uni$Accuracy)
+
+acc_10_fold_df <- data.frame("Group" = factor(rep(c("DT TFIDF", "DT BOW", "DT Uni", "RF TFIDF", "RF BOW", "RF Uni", "NB TFIDF", "NB BOW", "NB Uni"), each = 10)), "Accuracy" = acc_10_fold)
+
+shapiro.test(acc_10_fold_df$Accuracy)
+
+kruskal.test(Accuracy ~ Group, data = acc_10_fold_df)
+```
+
+### Added tests
 
 Bigrams, like unigrams, break sentences in individual words; however, bigrams split words into pairs.
 
@@ -1133,29 +1156,40 @@ Bigramtokenizer <- function(x) {
 # Unigram dtm
 tweets_dtm_bi <- DocumentTermMatrix(tweets_corpus,control = list(tokenize = Bigramtokenizer))
 
-tweets_m_bi <- as.matrix(tweets_dtm_uni)
-dim(tweets_m_uni)
+tweets_m_bi <- as.matrix(tweets_dtm_bi)
+dim(tweets_m_bi)
 
 # Display a subset of the matrix
 tweets_m_bi[14:28, 10:15]
 
 # Reduce the matrix by removing the low frequency terms
-tweets_dtm_bi_sparse <- removeSparseTerms(tweets_dtm_uni, 0.99) 
+tweets_dtm_bi_sparse <- removeSparseTerms(tweets_dtm_bi, 0.99) 
 tweets_dtm_bi_sparse
 
-tweets_m_bi <- as.matrix(tweets_dtm_uni_sparse)
-dim(tweets_m_uni)
+tweets_m_bi <- as.matrix(tweets_dtm_bi_sparse)
+dim(tweets_m_bi)
 
 # Display a subset of the matrix after the low frequency terms were removed
 tweets_m_bi[14:28, 10:15]
 ```
 
-```{r}
+```{r, warning = FALSE}
+m_bi <- as.data.frame(tweets_m_bi)
+colnames(m_bi) <- make.names(colnames(m_bi))
+m_bi$class = twitter_balanced$airline_sentiment
+```
+
+```{r, warning = FALSE}
+set.seed(577) 
+split_bi = sample.split(m_bi$class, SplitRatio = 0.7)
+train_bi = subset(m_bi, split_tfidf == TRUE)
+test_bi = subset(m_bi, split_tfidf == FALSE)
+
 RF_model_bi <- randomForest(class~., data = train_bi)
 
-predictRF_bii <- predict(RF_model_bi, newdata = test_bi)
+predictRF_bi <- predict(RF_model_bi, newdata = test_bi)
 
-confusionMatrix(table(test_biclass, predictRF_uni)) #evaluation of confusion matrix 
+confusionMatrix(table(test_bi$class, predictRF_bi)) #evaluation of confusion matrix 
 ```
 
 ```{r}
