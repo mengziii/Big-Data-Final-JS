@@ -993,7 +993,7 @@ model_NB_tfidf_5 <- train(
 model_NB_tfidf_5
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_tfidf_5$pred[order(model_NB_tfidf_5$pred$rowIndex),2], m_tfidf$class)
+confusionMatrix(model_NB_tfidf_5$pred[order(model_NB_tfidf_5$pred$rowIndex),4], m_tfidf$class)
 
 #display individual fold accuracies
 pred_NB_tfidf_5 <- model_NB_tfidf_5$pred
@@ -1019,7 +1019,7 @@ model_NB_tfidf <- train(
 model_NB_tfidf
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_tfidf$pred[order(model_NB_tfidf$pred$rowIndex),2], m_tfidf$class)
+confusionMatrix(model_NB_tfidf$pred[order(model_NB_tfidf$pred$rowIndex),4], m_tfidf$class)
 
 #display individual fold accuracies
 pred_NB_tfidf <- model_NB_tfidf$pred
@@ -1070,7 +1070,7 @@ model_NB_bow_5 <- train(
 model_NB_bow_5
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_bow_5$pred[order(model_NB_bow_5$pred$rowIndex),2], m_bow$class)
+confusionMatrix(model_NB_bow_5$pred[order(model_NB_bow_5$pred$rowIndex),4], m_bow$class)
 
 #display individual fold accuracies
 pred_NB_bow_5 <- model_NB_bow_5$pred
@@ -1096,7 +1096,7 @@ model_NB_bow <- train(
 model_NB_bow
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_bow$pred[order(model_NB_bow$pred$rowIndex),2], m_bow$class)
+confusionMatrix(model_NB_bow$pred[order(model_NB_bow$pred$rowIndex),4], m_bow$class)
 
 #display individual fold accuracies
 pred_NB_bow <- model_NB_bow$pred
@@ -1147,7 +1147,7 @@ model_NB_uni_5 <- train(
 model_NB_uni_5
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_uni_5$pred[order(model_NB_uni_5$pred$rowIndex),2], m_uni$class)
+confusionMatrix(model_NB_uni_5$pred[order(model_NB_uni_5$pred$rowIndex),4], m_uni$class)
 
 #display individual fold accuracies
 pred_NB_uni_5 <- model_NB_uni_5$pred
@@ -1172,7 +1172,7 @@ model_NB_uni <- train(
 model_NB_uni
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_NB_uni$pred[order(model_NB_uni$pred$rowIndex),2], m_uni$class)
+confusionMatrix(model_NB_uni$pred[order(model_NB_uni$pred$rowIndex),4], m_uni$class)
 
 #display individual fold accuracies
 pred_NB_uni <- model_NB_uni$pred
@@ -1283,7 +1283,7 @@ model_RF_bi
 confusionMatrix(model_RF_bi$pred[order(model_RF_bi$pred$rowIndex),2], m_bi$class)
 
 pred_RF_bi <- model_RF_bi$pred
-pred_RF_bi$equal <- ifelse(pred_RF_bi$pred == pred_NB_bi$obs, 1, 0)
+pred_RF_bi$equal <- ifelse(pred_RF_bi$pred == pred_RF_bi$obs, 1, 0)
 
 eachfold_RF_bi <- pred_RF_bi %>%
   group_by(Resample) %>%
@@ -1304,7 +1304,7 @@ model_RF_bi_50 <- train(
 model_RF_bi_50
 
 #create a confusion matrix for the best fold
-confusionMatrix(model_RF_bi_50$pred[order(model_RF_bi_50$pred$rowIndex),2],
+confusionMatrix(model_RF_bi_50$pred[order(model_RF_bi_50$pred$rowIndex),2], m_bi$class)
 
 pred_RF_bi_50 <- model_RF_bi_50$pred
 pred_RF_bi_50$equal <- ifelse(pred_RF_bi_50$pred == pred_RF_bi_50$obs, 1, 0)
