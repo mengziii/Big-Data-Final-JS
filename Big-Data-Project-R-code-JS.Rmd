@@ -274,10 +274,12 @@ dim(tweets_m_tfidf)
 tweets_m_tfidf[14:28, 10:15]
 ```
 
-```{r}
+```{r, warning = FALSE}
+#Word cloud to visually represent the highest frequency terms
 words_tfidf <- sort(colSums(tweets_m_tfidf), decreasing = TRUE)
 word_df_tfidf <- data.frame(word = names(words_tfidf), freq = words_tfidf)
 
+set.seed(9112)
 wordcloud(words = word_df_tfidf$word, freq = word_df_tfidf$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Dark2"))
 ```
 
@@ -308,11 +310,11 @@ dim(tweets_m_bow)
 tweets_m_bow[14:28, 10:15]
 ```
 
-```{r}
-#Word cloud to visually represent the highest frequency terms
+```{r, warning = FALSE}
 words_bow <- sort(colSums(tweets_m_bow), decreasing = TRUE)
 word_df_bow <- data.frame(word = names(words_bow), freq = words_bow)
 
+set.seed(9113)
 wordcloud(words = word_df_bow$word, freq = word_df_bow$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Accent"))
 ```
 
@@ -352,6 +354,7 @@ tweets_m_uni[14:28, 10:15]
 words_uni <- sort(colSums(tweets_m_uni), decreasing = TRUE)
 word_df_uni <- data.frame(word = names(words_uni), freq = words_uni)
 
+set.seed(9114)
 wordcloud(words = word_df_uni$word, freq = word_df_uni$freq, min.freq = 1, max.words = 2000, random.order = FALSE, rot.per = 0.35, colors = brewer.pal(8, "Set1"))
 ```
 
@@ -394,10 +397,15 @@ Second attempt (5-fold validation)
 set.seed(901)
 model_DT_tfidf_5 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "rpart",
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_tfidf_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_tfidf_5$pred[order(model_DT_tfidf_5$pred$rowIndex),2], m_tfidf$class)
+
+#display the accuracies of each individual fold
 
 pred_DT_tfidf_5 <- model_DT_tfidf_5$pred
 pred_DT_tfidf_5$equal <- ifelse(pred_DT_tfidf_5$pred == pred_DT_tfidf_5$obs, 1, 0)
@@ -416,10 +424,13 @@ Third attempt (10-fold validation)
 set.seed(902)
 model_DT_tfidf <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "rpart",
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_tfidf
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_tfidf$pred[order(model_DT_tfidf$pred$rowIndex),2], m_tfidf$class)
 
 pred_DT_tfidf <- model_DT_tfidf$pred
 pred_DT_tfidf$equal <- ifelse(pred_DT_tfidf$pred == pred_DT_tfidf$obs, 1, 0)
@@ -477,10 +488,13 @@ Second attempt (5-fold validation)
 set.seed(801)
 model_DT_bow_5 <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "rpart",
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_bow_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_bow_5$pred[order(model_DT_bow_5$pred$rowIndex),2], m_bow$class)
 
 pred_DT_bow_5 <- model_DT_bow_5$pred
 pred_DT_bow_5$equal <- ifelse(pred_DT_bow_5$pred == pred_DT_bow_5$obs, 1, 0)
@@ -499,10 +513,13 @@ Third attempt (10-fold validation)
 set.seed(802)
 model_DT_bow <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "rpart",
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_bow
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_bow$pred[order(model_DT_bow$pred$rowIndex),2], m_bow$class)
 
 pred_DT_bow <- model_DT_bow$pred
 pred_DT_bow$equal <- ifelse(pred_DT_bow$pred == pred_DT_bow$obs, 1, 0)
@@ -560,10 +577,13 @@ Second attempt (5-fold validation)
 set.seed(701)
 model_DT_uni_5 <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "rpart",
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_uni_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_uni_5$pred[order(model_DT_uni_5$pred$rowIndex),2], m_uni$class)
 
 pred_DT_uni_5 <- model_DT_uni_5$pred
 pred_DT_uni_5$equal <- ifelse(pred_DT_uni_5$pred == pred_DT_uni_5$obs, 1, 0)
@@ -582,10 +602,13 @@ Third attempt (10-fold validation)
 set.seed(702)
 model_DT_uni <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "rpart",
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_DT_uni
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_DT_uni$pred[order(model_DT_uni$pred$rowIndex),2], m_uni$class)
 
 pred_DT_uni <- model_DT_uni$pred
 pred_DT_uni$equal <- ifelse(pred_DT_uni$pred == pred_DT_uni$obs, 1, 0)
@@ -636,10 +659,13 @@ Second attempt (5-fold, 10 trees)
 set.seed(12)
 model_RF_tfidf_5 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_RF_tfidf_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_tfidf_5$pred[order(model_RF_tfidf_5$pred$rowIndex),2], m_tfidf$class)
 
 pred_RF_tfidf_5 <- model_RF_tfidf_5$pred
 pred_RF_tfidf_5$equal <- ifelse(pred_RF_tfidf_5$pred == pred_RF_tfidf_5$obs, 1, 0)
@@ -650,12 +676,6 @@ eachfold_RF_tfidf_5 <- pred_RF_tfidf_5 %>%
                list(Accuracy = mean))
 
 eachfold_RF_tfidf_5
-
-#visualize accuracy scores
-ggplot(data=eachfold_RF_tfidf_5, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="blue") +
-geom_point() +
-theme_minimal()
 ```
 
 Second attempt (10-fold, 10 trees)
@@ -664,10 +684,13 @@ Second attempt (10-fold, 10 trees)
 set.seed(1)
 model_RF_tfidf <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_RF_tfidf
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_tfidf$pred[order(model_RF_tfidf$pred$rowIndex),2], m_tfidf$class)
 
 pred_RF_tfidf <- model_RF_tfidf$pred
 pred_RF_tfidf$equal <- ifelse(pred_RF_tfidf$pred == pred_RF_tfidf$obs, 1, 0)
@@ -678,12 +701,6 @@ eachfold_RF_tfidf <- pred_RF_tfidf %>%
                list(Accuracy = mean))
 
 eachfold_RF_tfidf
-
-#visualize accuracy scores
-ggplot(data=eachfold_RF_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="maroon") +
-geom_point() +
-theme_minimal()
 ```
 
 Third attempt (10 fold, 50 trees)
@@ -692,8 +709,11 @@ Third attempt (10 fold, 50 trees)
 set.seed(11)
 model_RF_tfidf_50 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "cforest", controls = cforest_unbiased(ntree = 50),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_tfidf_50$pred[order(model_RF_tfidf_50$pred$rowIndex),2], m_tfidf$class)
  
 model_RF_tfidf_50
 
@@ -706,10 +726,25 @@ eachfold_RF_tfidf_50 <- pred_RF_tfidf_50 %>%
                list(Accuracy = mean))
  
 eachfold_RF_tfidf_50
- 
+```
+
+```{r}
+#visualize accuracy scores
+ggplot(data=eachfold_RF_tfidf_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
+
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_tfidf, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+
 #visualize accuracy scores
 ggplot(data=eachfold_RF_tfidf_50, aes(x=Resample, y=Accuracy, group=1)) +
-  geom_boxplot(color="maroon") +
+  geom_boxplot(color="green") +
   geom_point() +
   theme_minimal()
 ```
@@ -732,10 +767,13 @@ Second attempt (5-fold, 10 trees)
 set.seed(22)
 model_RF_bow_5 <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_RF_bow_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_bow_5$pred[order(model_RF_bow_5$pred$rowIndex),2], m_bow$class)
 
 pred_RF_bow_5 <- model_RF_bow_5$pred
 pred_RF_bow_5$equal <- ifelse(pred_RF_bow_5$pred == pred_RF_bow_5$obs, 1, 0)
@@ -746,12 +784,6 @@ eachfold_RF_bow_5 <- pred_RF_bow_5 %>%
                list(Accuracy = mean))
 
 eachfold_RF_bow_5
-
-#visualize accuracy scores
-ggplot(data=eachfold_RF_bow_5, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="blue") +
-geom_point() +
-theme_minimal()
 ```
 
 Second attempt (10-fold, 10 trees)
@@ -760,10 +792,13 @@ Second attempt (10-fold, 10 trees)
 set.seed(2)
 model_RF_bow <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_RF_bow
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_bow$pred[order(model_RF_bow$pred$rowIndex),2], m_bow$class)
 
 pred_RF_bow <- model_RF_bow$pred
 pred_RF_bow$equal <- ifelse(pred_RF_bow$pred == pred_RF_bow$obs, 1, 0)
@@ -774,12 +809,6 @@ eachfold_RF_bow <- pred_RF_bow %>%
                list(Accuracy = mean))
 
 eachfold_RF_bow
-
-#visualize accuracy scores
-ggplot(data=eachfold_RF_bow, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="maroon") +
-geom_point() +
-theme_minimal()
 ```
 
 Third attempt (10-fold, 50 trees)
@@ -788,10 +817,13 @@ Third attempt (10-fold, 50 trees)
 set.seed(21)
 model_RF_bow_50 <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "cforest", controls = cforest_unbiased(ntree = 50),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
  
 model_RF_bow_50
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_bow_50$pred[order(model_RF_bow_50$pred$rowIndex),2], m_bow$class)
 
 pred_RF_bow_50 <- model_RF_bow_50$pred
 pred_RF_bow_50$equal <- ifelse(pred_RF_bow_50$pred == pred_RF_bow_50$obs, 1, 0)
@@ -802,10 +834,24 @@ eachfold_RF_bow_50 <- pred_RF_bow_50 %>%
                list(Accuracy = mean))
  
 eachfold_RF_bow_50
- 
+```
+
+```{r}
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bow_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bow, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+
 #visualize accuracy scores
 ggplot(data=eachfold_RF_bow_50, aes(x=Resample, y=Accuracy, group=1)) +
-  geom_boxplot(color="maroon") +
+  geom_boxplot(color="green") +
   geom_point() +
   theme_minimal()
 ```
@@ -826,56 +872,52 @@ Second attempt (5-fold, 10 trees)
 
 ```{r}
 set.seed(32)
-model_NB_uni_5 <- train(
+model_RF_uni_5 <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
-model_NB_uni_5
+model_RF_uni_5
 
-pred_NB_uni_5 <- model_NB_uni_5$pred
-pred_NB_uni_5$equal <- ifelse(pred_NB_uni_5$pred == pred_NB_uni_5$obs, 1, 0)
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_uni_5$pred[order(model_RF_uni_5$pred$rowIndex),2], m_uni$class)
 
-eachfold_RF_uni_5 <- pred_NB_uni_5 %>%
+pred_RF_uni_5 <- model_RF_uni_5$pred
+pred_RF_uni_5$equal <- ifelse(pred_RF_uni_5$pred == pred_RF_uni_5$obs, 1, 0)
+
+eachfold_RF_uni_5 <- pred_RF_uni_5 %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
 
 eachfold_RF_uni_5
 
-#visualize accuracy scores
-ggplot(data=eachfold_RF_uni_5, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="blue") +
-geom_point() +
-theme_minimal()
 ```
 
 Second attempt (10-fold, 10 trees)
 
 ```{r, warning = FALSE}
 set.seed(3)
-model_NB_uni <- train(
+model_RF_uni <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
-model_NB_uni
+model_RF_uni
 
-pred_NB_uni <- model_NB_uni$pred
-pred_NB_uni$equal <- ifelse(pred_NB_uni$pred == pred_NB_uni$obs, 1, 0)
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_uni$pred[order(model_RF_uni$pred$rowIndex),2], m_uni$class)
 
-eachfold_RF_uni <- pred_NB_uni %>%
+pred_RF_uni <- model_RF_uni$pred
+pred_RF_uni$equal <- ifelse(pred_RF_uni$pred == pred_RF_uni$obs, 1, 0)
+
+eachfold_RF_uni <- pred_RF_uni %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
 
 eachfold_RF_uni
 
-#visualize accuracy scores
-ggplot(data=eachfold_RF_uni, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="maroon") +
-geom_point() +
-theme_minimal()
 ```
 
 Third attempt (10 fold, 50 trees)
@@ -884,10 +926,13 @@ Third attempt (10 fold, 50 trees)
 set.seed(31)
 model_RF_uni_50 <- train(
   m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "cforest", controls = cforest_unbiased(ntree = 50),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
  
 model_RF_uni_50
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_uni_50$pred[order(model_RF_uni_50$pred$rowIndex),2], m_uni$class)
 
 pred_RF_uni_50 <- model_RF_uni_50$pred
 pred_RF_uni_50$equal <- ifelse(pred_RF_uni_50$pred == pred_RF_uni_50$obs, 1, 0)
@@ -898,7 +943,22 @@ eachfold_RF_uni_50 <- pred_RF_uni_50 %>%
                list(Accuracy = mean))
  
 eachfold_RF_uni_50
- 
+
+```
+
+```{r}
+#visualize accuracy scores
+ggplot(data=eachfold_RF_uni_5, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="blue") +
+geom_point() +
+theme_minimal()
+
+#visualize accuracy scores
+ggplot(data=eachfold_RF_uni, aes(x=Resample, y=Accuracy, group=1)) +
+geom_boxplot(color="maroon") +
+geom_point() +
+theme_minimal()
+
 #visualize accuracy scores
 ggplot(data=eachfold_RF_uni_50, aes(x=Resample, y=Accuracy, group=1)) +
   geom_boxplot(color="maroon") +
@@ -927,10 +987,13 @@ Second attempt (5-fold)
 set.seed(92138)
 model_NB_tfidf_5 <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "nb", 
-  trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_tfidf_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_tfidf_5$pred[order(model_NB_tfidf_5$pred$rowIndex),2], m_tfidf$class)
 
 #display individual fold accuracies
 pred_NB_tfidf_5 <- model_NB_tfidf_5$pred
@@ -950,10 +1013,13 @@ Third attempt (10-fold)
 set.seed(92132)
 model_NB_tfidf <- train(
   m_tfidf[,!names(m_tfidf) %in% c("class")], m_tfidf$class, "nb", 
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_tfidf
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_tfidf$pred[order(model_NB_tfidf$pred$rowIndex),2], m_tfidf$class)
 
 #display individual fold accuracies
 pred_NB_tfidf <- model_NB_tfidf$pred
@@ -998,10 +1064,13 @@ Second attempt (5-fold validation)
 ```{r, warning = FALSE}
 set.seed(45894)
 model_NB_bow_5 <- train(
-  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_bow_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_bow_5$pred[order(model_NB_bow_5$pred$rowIndex),2], m_bow$class)
 
 #display individual fold accuracies
 pred_NB_bow_5 <- model_NB_bow_5$pred
@@ -1021,10 +1090,13 @@ Third attempt (10-fold validation)
 set.seed(45892)
 model_NB_bow <- train(
   m_bow[,!names(m_bow) %in% c("class")], m_bow$class, "nb", 
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_bow
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_bow$pred[order(model_NB_bow$pred$rowIndex),2], m_bow$class)
 
 #display individual fold accuracies
 pred_NB_bow <- model_NB_bow$pred
@@ -1069,10 +1141,13 @@ Second attempt (5-fold validation)
 ```{r, warning=FALSE}
 set.seed(8920)
 model_NB_uni_5 <- train(
-  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = TRUE)
+  m_uni[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 5, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_uni_5
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_uni_5$pred[order(model_NB_uni_5$pred$rowIndex),2], m_uni$class)
 
 #display individual fold accuracies
 pred_NB_uni_5 <- model_NB_uni_5$pred
@@ -1091,10 +1166,13 @@ Third attempt (10-fold validation)
 ```{r, warning=FALSE}
 set.seed(8920)
 model_NB_uni <- train(
-  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  m_bow[,!names(m_uni) %in% c("class")], m_uni$class, "nb", trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
 model_NB_uni
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_NB_uni$pred[order(model_NB_uni$pred$rowIndex),2], m_uni$class)
 
 #display individual fold accuracies
 pred_NB_uni <- model_NB_uni$pred
@@ -1194,38 +1272,39 @@ confusionMatrix(table(test_bi$class, predictRF_bi)) #evaluation of confusion mat
 
 ```{r}
 set.seed(4)
-model_NB_bi <- train(
+model_RF_bi <- train(
   m_bi[,!names(m_bi) %in% c("class")], m_bi$class, "cforest", controls = cforest_unbiased(ntree = 10),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
 
-model_NB_bi
+model_RF_bi
 
-pred_NB_bi <- model_NB_bi$pred
-pred_NB_bi$equal <- ifelse(pred_NB_bi$pred == pred_NB_bi$obs, 1, 0)
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_bi$pred[order(model_RF_bi$pred$rowIndex),2], m_bi$class)
 
-eachfold_RF_bi <- pred_NB_bi %>%
+pred_RF_bi <- model_RF_bi$pred
+pred_RF_bi$equal <- ifelse(pred_RF_bi$pred == pred_NB_bi$obs, 1, 0)
+
+eachfold_RF_bi <- pred_RF_bi %>%
   group_by(Resample) %>%
   summarise_at(vars(equal),
                list(Accuracy = mean))
 
 eachfold_RF_bi
 
-#visualize accuracy scores
-ggplot(data=eachfold_RF_bi, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="maroon") +
-geom_point() +
-theme_minimal()
 ```
 
 ```{r, warning = FALSE}
 set.seed(41)
 model_RF_bi_50 <- train(
   m_bi[,!names(m_bi) %in% c("class")], m_bi$class, "cforest", controls = cforest_unbiased(ntree = 50),
-  trControl = trainControl(method = "cv", number = 10, savePredictions = TRUE)
+  trControl = trainControl(method = "cv", number = 10, savePredictions = "final", classProbs = TRUE)
 )
- 
+
 model_RF_bi_50
+
+#create a confusion matrix for the best fold
+confusionMatrix(model_RF_bi_50$pred[order(model_RF_bi_50$pred$rowIndex),2],
 
 pred_RF_bi_50 <- model_RF_bi_50$pred
 pred_RF_bi_50$equal <- ifelse(pred_RF_bi_50$pred == pred_RF_bi_50$obs, 1, 0)
@@ -1236,9 +1315,19 @@ eachfold_RF_bi_50 <- pred_RF_bi_50 %>%
                list(Accuracy = mean))
  
 eachfold_RF_bi_50
- 
+
+```
+
+```{r}
+#visualize accuracy scores
+ggplot(data=eachfold_RF_bi, aes(x=Resample, y=Accuracy, group=1)) +
+  geom_boxplot(color="maroon") +
+  geom_point() +
+  theme_minimal()
+
 #visualize accuracy scores
 ggplot(data=eachfold_RF_bi_50, aes(x=Resample, y=Accuracy, group=1)) +
-  geom_boxplot(color="maroon") +
+  geom_boxplot(color="green") +
+  geom_point() + 
   theme_minimal()
 ```
