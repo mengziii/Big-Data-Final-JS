@@ -11,6 +11,8 @@ Using Natural Language Processing (NLP) on the Twitter US airline sentiment data
 
 > [Partial report](https://github.com/mengziii/Big-Data-Final-JS/blob/80cac814f043aae06446bdaaa94edc8f430b8cf4/CIND%20820%20Big%20Data%20Analytics%20Project%20-%20Jossa%20Soto.docx) can be downloaded
 
+> [Report Presentation]
+
 ### Description of Data
 The dataset contains 14,640 entries with 15 variables including the tweet text and class. The data is imbalanced with a large fraction of tweets classified as negative. Data is balanced by under sampling the negative and neutral sentiments. This results in 7,363 records in the subset that is used in the project.
 
